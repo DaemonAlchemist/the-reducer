@@ -1,8 +1,9 @@
 import { AnyAction, Reducer as ReduxReducer, ReducersMapObject } from "redux";
 
-export interface IEntityDefinition {
+export interface IEntityDefinition<T> {
     module:string;
     entity:string;
+    default:T;
 }
 
 export interface IEntityBase {
@@ -44,7 +45,7 @@ export interface IEntityContainer<T> {
 }
 
 export interface IEntityActions<T extends IEntityBase> {
-    add:(entity:T) => IEntityAddAction<T>;
+    add:(entity:PartialEntity<T>) => IEntityAddAction<T>;
     update:(entity:PartialEntity<T>) => IEntityUpdateAction<T>;
     delete:(id:string) => IEntityDeleteAction;
 };
@@ -53,7 +54,7 @@ export type Filter<T> = (entity:T) => boolean;
 export type PartialFilter<T> = (entity:PartialEntity<T>) => boolean;
 
 export interface IEntitySelectors<T> {
-    get:(state:IEntityContainer<T>, id:string) => PartialEntity<T> | undefined;
+    get:(state:IEntityContainer<T>, id:string) => PartialEntity<T>;
     getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => PartialEntity<T>[];
 }
 
