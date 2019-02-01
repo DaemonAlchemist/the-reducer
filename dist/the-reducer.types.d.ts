@@ -61,6 +61,8 @@ export interface IEntitySelectors<T> {
     get: (state: IEntityContainer<T>, id: string) => PartialEntity<T> | undefined;
     getMultiple: (state: IEntityContainer<T>, filter: Filter<PartialEntity<T>>) => PartialEntity<T>[];
 }
-export declare type Entity<T extends IEntityBase> = IEntityActions<T> & IEntitySelectors<T>;
+export declare type Entity<T extends IEntityBase> = IEntityActions<T> & IEntitySelectors<T> & {
+    reducer: IEntityReducer<T>;
+};
 export declare type ChildSelector<C extends IEntityBase> = (state: IEntityContainer<C>, parentId: string) => PartialEntity<C>[];
 export declare type ParentSelector<P extends IEntityBase, C extends IEntityBase> = (state: IEntityContainer<P> & IEntityContainer<C>, childId: string) => PartialEntity<P> | undefined;

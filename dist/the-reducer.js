@@ -38,7 +38,7 @@ var entityReducer = function (def) { return function (state, action) {
             _a))
         : state;
 }; };
-exports.createEntityReducer = function (def) {
+var createEntityReducer = function (def) {
     var _a, _b;
     return (_a = {},
         _a[def.module] = (_b = {},
@@ -85,22 +85,22 @@ var createEntitySelectors = function (def) { return ({
 }); };
 exports.getChildren = function (childDef, field) {
     return function (state, parentId) {
-        return exports.entityRedux(childDef).getMultiple(state, function (child) { return child[field] === parentId; });
+        return exports.entity(childDef).getMultiple(state, function (child) { return child[field] === parentId; });
     };
 };
 exports.getParent = function (parentDef, childDef, field) {
     return function (state, childId) {
-        return exports.entityRedux(parentDef).get(state, atp_pointfree_1._(atp_pointfree_1.prop(field), exports.entityRedux(childDef).get(state, childId)));
+        return exports.entity(parentDef).get(state, atp_pointfree_1._(atp_pointfree_1.prop(field), exports.entity(childDef).get(state, childId)));
     };
 };
 exports.getRelated = function (rDef, bDef, aField, bField) {
     return function (state, aId) {
-        var bIds = exports.entityRedux(rDef).getMultiple(state, function (r) { return r[aField] === aId; }).map(atp_pointfree_1.prop(bField));
-        return exports.entityRedux(bDef).getMultiple(state, function (b) { return bIds.includes(b.id); });
+        var bIds = exports.entity(rDef).getMultiple(state, function (r) { return r[aField] === aId; }).map(atp_pointfree_1.prop(bField));
+        return exports.entity(bDef).getMultiple(state, function (b) { return bIds.includes(b.id); });
     };
 };
 // Boilerplate
-exports.entityRedux = function (def) { return (__assign({}, createEntityActions(def), createEntitySelectors(def))); };
+exports.entity = function (def) { return (__assign({}, createEntityActions(def), createEntitySelectors(def), { reducer: createEntityReducer(def) })); };
 var arcDefinition = {
     module: "comic",
     entity: "arc",
@@ -111,18 +111,16 @@ var pageDefinition = {
     entity: "page",
     idField: "id",
 };
-exports.arcReducer = exports.createEntityReducer(arcDefinition);
-exports.arcRedux = __assign({}, exports.entityRedux(arcDefinition), { pages: exports.getChildren(pageDefinition, "arcId") });
-exports.pageReducer = exports.createEntityReducer(pageDefinition);
-exports.pageRedux = __assign({}, exports.entityRedux(pageDefinition), { arc: exports.getParent(arcDefinition, pageDefinition, "arcId") });
+exports.arcRedux = __assign({}, exports.entity(arcDefinition), { pages: exports.getChildren(pageDefinition, "arcId") });
+exports.pageRedux = __assign({}, exports.entity(pageDefinition), { arc: exports.getParent(arcDefinition, pageDefinition, "arcId") });
 var toggleDefinition = {
     module: "ui",
     entity: "toggle",
     idField: "id"
 };
-exports.toggleReducer = exports.createEntityReducer(toggleDefinition);
-exports.t = exports.entityRedux(toggleDefinition);
+exports.t = exports.entity(toggleDefinition);
 exports.toggleRedux = {
+    reducer: exports.t.reducer,
     show: function (id) { return exports.t.update({ id: id, isVisible: true }); },
     hide: function (id) { return exports.t.update({ id: id, isVisible: false }); },
     isOn: function (state, id) { return (exports.t.get(state, id) || { isVisible: false }).isVisible || false; }

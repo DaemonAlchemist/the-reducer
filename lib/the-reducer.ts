@@ -21,7 +21,7 @@ const entityReducer = <T extends IEntityBase>(def:IEntityDefinition) => (state:I
           })
         : state;
 
-export const createEntityReducer = <T extends IEntityBase>(def:IEntityDefinition):IEntityReducer<T> => ({
+const createEntityReducer = <T extends IEntityBase>(def:IEntityDefinition):IEntityReducer<T> => ({
     [def.module]: {
         [def.entity]: entityReducer<T>(def)
     }
@@ -67,22 +67,23 @@ const createEntitySelectors = <T extends IEntityBase>(def:IEntityDefinition):IEn
 
 export const getChildren = <C extends IEntityBase>(childDef:IEntityDefinition, field:string):ChildSelector<C> =>
     (state:IEntityContainer<C>, parentId:string):PartialEntity<C>[] =>
-        entityRedux<C>(childDef).getMultiple(state, (child:PartialEntity<C>) => ((<any>child)[field] as string) === parentId)
+        entity<C>(childDef).getMultiple(state, (child:PartialEntity<C>) => ((<any>child)[field] as string) === parentId)
 
 export const getParent = <P extends IEntityBase, C extends IEntityBase>(parentDef:IEntityDefinition, childDef:IEntityDefinition, field:string):ParentSelector<P, C> =>
     (state:IEntityContainer<P> & IEntityContainer<C>, childId:string):PartialEntity<P> | undefined =>
-        entityRedux<P>(parentDef).get(state, _(prop(field), entityRedux<C>(childDef).get(state, childId)));
+        entity<P>(parentDef).get(state, _(prop(field), entity<C>(childDef).get(state, childId)));
 
 export const getRelated = <R extends IEntityBase, B extends IEntityBase>(rDef:IEntityDefinition, bDef:IEntityDefinition, aField:string, bField:string) =>
     (state:IEntityContainer<R> & IEntityContainer<B>, aId:string) => {
-        const bIds:string[] = entityRedux<R>(rDef).getMultiple(state, (r:PartialEntity<R>) => ((<any>r)[aField] as string) === aId).map(prop(bField));
-        return entityRedux<B>(bDef).getMultiple(state, (b:PartialEntity<B>):boolean => bIds.includes(b.id));
+        const bIds:string[] = entity<R>(rDef).getMultiple(state, (r:PartialEntity<R>) => ((<any>r)[aField] as string) === aId).map(prop(bField));
+        return entity<B>(bDef).getMultiple(state, (b:PartialEntity<B>):boolean => bIds.includes(b.id));
     };
 
 // Boilerplate
-export const entityRedux = <T extends IEntityBase>(def:IEntityDefinition):Entity<T> => ({
+export const entity = <T extends IEntityBase>(def:IEntityDefinition):Entity<T> => ({
     ...createEntityActions<T>(def),
-    ...createEntitySelectors<T>(def)
+    ...createEntitySelectors<T>(def),
+    reducer: createEntityReducer<T>(def),
 });
 
 // ----------------------------------------------
@@ -112,21 +113,19 @@ const pageDefinition = {
     idField: "id",
 }
 
-export const arcReducer = createEntityReducer<IComicArc>(arcDefinition);
 export interface IArcRedux extends Entity<IComicArc> {
     pages: ChildSelector<IComicPage>;
 }
 export const arcRedux:IArcRedux = {
-    ...entityRedux<IComicArc>(arcDefinition),
+    ...entity<IComicArc>(arcDefinition),
     pages: getChildren<IComicPage>(pageDefinition, "arcId"),
 };
 
-export const pageReducer = createEntityReducer<IComicPage>(pageDefinition);
 export interface IPageRedux extends Entity<IComicPage> {
     arc: ParentSelector<IComicArc, IComicPage>;
 }
 export const pageRedux:IPageRedux = {
-    ...entityRedux<IComicPage>(pageDefinition),
+    ...entity<IComicPage>(pageDefinition),
     arc: getParent<IComicArc, IComicPage>(arcDefinition, pageDefinition, "arcId")
 };
 
@@ -144,14 +143,15 @@ const toggleDefinition = {
 }
 
 interface IToggleRedux {
+    reducer: IEntityReducer<IToggle>,
     show: (id:string) => IEntityAction;
     hide: (id:string) => IEntityAction;
     isOn: (state:IEntityContainer<IToggle>, id:string) => boolean;
 }
 
-export const toggleReducer = createEntityReducer<IToggle>(toggleDefinition);
-export const t = entityRedux<IToggle>(toggleDefinition);
+export const t = entity<IToggle>(toggleDefinition);
 export const toggleRedux:IToggleRedux = {
+    reducer: t.reducer,
     show: (id:string) => t.update({id, isVisible: true}),
     hide: (id:string) => t.update({id, isVisible: false}),
     isOn: (state:IEntityContainer<IToggle>, id:string) => (t.get(state, id) || {isVisible: false}).isVisible || false
