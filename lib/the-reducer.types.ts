@@ -36,15 +36,16 @@ export interface IEntityContainer<T> {
 
 export interface IEntityActions<T extends IEntityBase> {
     add:(entity:T) => IEntityAddAction<T>;
-    update:(entity:Partial<T>) => IEntityUpdateAction<T>;
+    update:(entity:PartialEntity<T>) => IEntityUpdateAction<T>;
     delete:(id:string) => IEntityDeleteAction;
 };
 
-export type EntityFilter<T> = (entity:T) => boolean;
+export type Filter<T> = (entity:T) => boolean;
+export type PartialFilter<T> = (entity:PartialEntity<T>) => boolean;
 
 export interface IEntitySelectors<T> {
     get:(state:IEntityContainer<T>, id:string) => PartialEntity<T> | undefined;
-    getMultiple:(state:IEntityContainer<T>, filter:EntityFilter<PartialEntity<T>>) => PartialEntity<T>[];
+    getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => PartialEntity<T>[];
 }
 
 export type Entity<T extends IEntityBase> = IEntityActions<T> & IEntitySelectors<T>;

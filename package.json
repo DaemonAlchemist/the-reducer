@@ -2,7 +2,7 @@
   "name": "the-reducer",
   "version": "0.0.0",
   "description": "A general purpose normalized Redux entity framework",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "npm test",
     "build": "tsc"

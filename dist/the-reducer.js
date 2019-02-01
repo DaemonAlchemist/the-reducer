@@ -70,7 +70,9 @@ exports.createEntitySelectors = function (def) { return ({
     },
 }); };
 exports.getChildren = function (childDef, field) {
-    return function (state, parentId) { return exports.entityRedux(childDef).getMultiple(state, function (child) { return child[field] === parentId; }); };
+    return function (state, parentId) {
+        return exports.entityRedux(childDef).getMultiple(state, function (child) { return child[field] === parentId; });
+    };
 };
 exports.getParent = function (parentDef, childDef, field) {
     return function (state, childId) {
@@ -109,5 +111,5 @@ exports.t = exports.entityRedux(toggleDefinition);
 exports.toggleRedux = {
     show: function (id) { return exports.t.update({ id: id, isVisible: true }); },
     hide: function (id) { return exports.t.update({ id: id, isVisible: false }); },
-    isOn: function (state, id) { return exports.t.get(state, id).isVisible || false; }
+    isOn: function (state, id) { return (exports.t.get(state, id) || { isVisible: false }).isVisible || false; }
 };

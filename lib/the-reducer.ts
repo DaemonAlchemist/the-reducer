@@ -1,9 +1,8 @@
 import { prop, remove, switchOn, _ } from 'atp-pointfree';
-import { PartialEntity, ChildSelector, Entity, EntityAction, EntityActionType, EntityFilter, IEntityAction, IEntityActions, IEntityAddAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityReducer, IEntitySelectors, IEntityState, IEntityUpdateAction, ParentSelector } from './the-reducer.types';
+import { PartialEntity, ChildSelector, Entity, EntityAction, EntityActionType, PartialFilter, IEntityAction, IEntityActions, IEntityAddAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityReducer, IEntitySelectors, IEntityState, IEntityUpdateAction, ParentSelector } from './the-reducer.types';
 
 // Reducer
 const initialState = {};
-// TODO:  Validate that T's id field is a string
 const entityReducer = <T extends IEntityBase>(def:IEntityDefinition) => (state:IEntityState<T> = initialState, action:EntityAction<T>):IEntityState<T> => switchOn(action.type, {
     [EntityActionType.Add]: () => Object.assign({}, state, {
         [(action as IEntityAddAction<T>).entity.id]: (action as IEntityAddAction<T>).entity
@@ -45,20 +44,22 @@ const getEntity = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntity
 const selectAll = <T>() => (obj:T):boolean => true;
 export const createEntitySelectors = <T extends IEntityBase>(def:IEntityDefinition):IEntitySelectors<T> => ({
     get:(state:IEntityContainer<T>, id:string):PartialEntity<T> | undefined => getEntity<T>(state, def, id),
-    getMultiple: (state:IEntityContainer<T>, f:EntityFilter<T> = selectAll<T>()):PartialEntity<T>[] => getEntities(state, def).filter(f),
+    getMultiple: (state:IEntityContainer<T>, f:PartialFilter<T> = selectAll<PartialEntity<T>>()):PartialEntity<T>[] =>
+        getEntities(state, def).filter(f),
 });
 
 export const getChildren = <C extends IEntityBase>(childDef:IEntityDefinition, field:string):ChildSelector<C> =>
-    (state:IEntityContainer<C>, parentId:string):PartialEntity<C>[] => entityRedux<C>(childDef).getMultiple(state, (child:C) => child[field] === parentId)
+    (state:IEntityContainer<C>, parentId:string):PartialEntity<C>[] =>
+        entityRedux<C>(childDef).getMultiple(state, (child:PartialEntity<C>) => ((<any>child)[field] as string) === parentId)
 
 export const getParent = <P extends IEntityBase, C extends IEntityBase>(parentDef:IEntityDefinition, childDef:IEntityDefinition, field:string):ParentSelector<P, C> =>
     (state:IEntityContainer<P> & IEntityContainer<C>, childId:string):PartialEntity<P> | undefined =>
         entityRedux<P>(parentDef).get(state, _(prop(field), entityRedux<C>(childDef).get(state, childId)));
 
 export const getRelated = <R extends IEntityBase, B extends IEntityBase>(rDef:IEntityDefinition, bDef:IEntityDefinition, aField:string, bField:string) =>
-    (state:IEntityContainer<R> & IEntityContainer<B>, aId:number) => {
-        const bIds:number[] = entityRedux<R>(rDef).getMultiple(state, (r:R) => r[aField] === aId).map(prop(bField));
-        return entityRedux<B>(bDef).getMultiple(state, (b:B):boolean => bIds.includes(b.id));
+    (state:IEntityContainer<R> & IEntityContainer<B>, aId:string) => {
+        const bIds:string[] = entityRedux<R>(rDef).getMultiple(state, (r:PartialEntity<R>) => ((<any>r)[aField] as string) === aId).map(prop(bField));
+        return entityRedux<B>(bDef).getMultiple(state, (b:PartialEntity<B>):boolean => bIds.includes(b.id));
     };
 
 // Boilerplate
@@ -66,9 +67,6 @@ export const entityRedux = <T extends IEntityBase>(def:IEntityDefinition):Entity
     ...createEntityActions<T>(def),
     ...createEntitySelectors<T>(def)
 });
-
-
-
 
 // ----------------------------------------------
 interface IComicArc {
@@ -131,7 +129,7 @@ const toggleDefinition = {
 interface IToggleRedux {
     show: (id:string) => IEntityAction;
     hide: (id:string) => IEntityAction;
-    isOn: (state:IEntityContainer<IToggle>, id:number) => boolean;
+    isOn: (state:IEntityContainer<IToggle>, id:string) => boolean;
 }
 
 export const toggleReducer = entityReducer<IToggle>(toggleDefinition);
@@ -139,5 +137,5 @@ export const t = entityRedux<IToggle>(toggleDefinition);
 export const toggleRedux:IToggleRedux = {
     show: (id:string) => t.update({id, isVisible: true}),
     hide: (id:string) => t.update({id, isVisible: false}),
-    isOn: (state:IEntityContainer<IToggle>, id:number) => t.get(state, id).isVisible || false
+    isOn: (state:IEntityContainer<IToggle>, id:string) => (t.get(state, id) || {isVisible: false}).isVisible || false
 };

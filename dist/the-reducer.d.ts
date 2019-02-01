@@ -1,10 +1,10 @@
-import { ChildSelector, Entity, EntityAction, IEntityAction, IEntityActions, IEntityBase, IEntityContainer, IEntityDefinition, IEntityReducer, IEntitySelectors, IEntityState, ParentSelector } from './the-reducer.types';
+import { PartialEntity, ChildSelector, Entity, EntityAction, IEntityAction, IEntityActions, IEntityBase, IEntityContainer, IEntityDefinition, IEntityReducer, IEntitySelectors, IEntityState, ParentSelector } from './the-reducer.types';
 export declare const createEntityReducer: <T extends IEntityBase>(def: IEntityDefinition) => IEntityReducer<T>;
 export declare const createEntityActions: <T extends IEntityBase>(def: IEntityDefinition) => IEntityActions<T>;
 export declare const createEntitySelectors: <T extends IEntityBase>(def: IEntityDefinition) => IEntitySelectors<T>;
 export declare const getChildren: <C extends IEntityBase>(childDef: IEntityDefinition, field: string) => ChildSelector<C>;
 export declare const getParent: <P extends IEntityBase, C extends IEntityBase>(parentDef: IEntityDefinition, childDef: IEntityDefinition, field: string) => ParentSelector<P, C>;
-export declare const getRelated: <R extends IEntityBase, B extends IEntityBase>(rDef: IEntityDefinition, bDef: IEntityDefinition, aField: string, bField: string) => (state: IEntityContainer<R> & IEntityContainer<B>, aId: number) => any;
+export declare const getRelated: <R extends IEntityBase, B extends IEntityBase>(rDef: IEntityDefinition, bDef: IEntityDefinition, aField: string, bField: string) => (state: IEntityContainer<R> & IEntityContainer<B>, aId: string) => PartialEntity<B>[];
 export declare const entityRedux: <T extends IEntityBase>(def: IEntityDefinition) => Entity<T>;
 interface IComicArc {
     id: string;
@@ -35,7 +35,7 @@ interface IToggle {
 interface IToggleRedux {
     show: (id: string) => IEntityAction;
     hide: (id: string) => IEntityAction;
-    isOn: (state: IEntityContainer<IToggle>, id: number) => boolean;
+    isOn: (state: IEntityContainer<IToggle>, id: string) => boolean;
 }
 export declare const toggleReducer: (state: IEntityState<IToggle> | undefined, action: EntityAction<IToggle>) => IEntityState<IToggle>;
 export declare const t: Entity<IToggle>;
