@@ -1,6 +1,8 @@
 import { entity, getChildren, getParent, combineReducersResursive } from './the-reducer';
 import { ChildSelector, Entity, IEntityAction, IEntityContainer, IEntityReducer, ParentSelector } from './the-reducer.types';
 import * as merge from 'merge-deep';
+import {_, prop} from 'atp-pointfree';
+
 // ----------------------------------------------
 
 interface IComicArc {
@@ -147,4 +149,33 @@ it("should be able to fetch and filter multiple objects", () => {
 
     expect(arcs.length).toEqual(1);
     expect(arcs[0].name).toEqual("Test Arc 2");
+});
+
+it("can fetch children", () => {
+    const state = [
+        arc.add({id: "1", name: "Test Arc"}),
+        arc.add({id: "2", name: "Test Arc 2"}),
+        page.add({id: "1", name: "Test Page", arcId: "1"}),
+        page.add({id: "2", name: "Test Page 2", arcId: "1"}),
+        page.add({id: "3", name: "Test Page 3", arcId: "2"}),
+    ].reduce(reducer, {});
+
+    const pages = arc.pages(state, "1");
+
+    expect(pages.length).toEqual(2);
+    expect(pages[0].name).toEqual("Test Page");
+    expect(pages[1].name).toEqual("Test Page 2");
+});
+
+it("can fetch parents", () => {
+    const state = [
+        arc.add({id: "1", name: "Test Arc"}),
+        arc.add({id: "2", name: "Test Arc 2"}),
+        page.add({id: "1", name: "Test Page", arcId: "1"}),
+        page.add({id: "2", name: "Test Page 2", arcId: "1"}),
+        page.add({id: "3", name: "Test Page 3", arcId: "2"}),
+    ].reduce(reducer, {});
+    
+    expect(page.arc(state, "1").name).toEqual("Test Arc");
+    expect(page.arc(state, "3").name).toEqual("Test Arc 2");
 });

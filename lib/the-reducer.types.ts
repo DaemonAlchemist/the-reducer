@@ -62,4 +62,4 @@ export type Entity<T extends IEntityBase> = IEntityActions<T> & IEntitySelectors
     reducer: IEntityReducer<T>
 };
 export type ChildSelector<C extends IEntityBase> = (state:IEntityContainer<C>, parentId:string) =>PartialEntity<C>[];
-export type ParentSelector<P extends IEntityBase, C extends IEntityBase> = (state:IEntityContainer<P> & IEntityContainer<C>, childId:string) => PartialEntity<P> | undefined;
+export type ParentSelector<P extends IEntityBase, C extends IEntityBase> = (state:IEntityContainer<P> & IEntityContainer<C>, childId:string) => PartialEntity<P>;
