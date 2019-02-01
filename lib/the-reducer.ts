@@ -4,19 +4,22 @@ import {combineReducers, ReducersMapObject, AnyAction} from 'redux';
 
 // Reducer
 const initialState = {};
-const entityReducer = <T extends IEntityBase>(def:IEntityDefinition) => (state:IEntityState<T> = initialState, action:EntityAction<T>):IEntityState<T> => switchOn(action.type, {
-    [EntityActionType.Add]: () => Object.assign({}, state, {
-        [(action as IEntityAddAction<T>).entity.id]: (action as IEntityAddAction<T>).entity
-    }),
-    [EntityActionType.Update]: () => Object.assign({}, state, {
-        [(action as IEntityUpdateAction<T>).entity.id]: Object.assign(
-            {},
-            state[(action as IEntityUpdateAction<T>).entity.id] || {},
-            (action as IEntityUpdateAction<T>).entity)
-    }),
-    [EntityActionType.Delete]: () => remove((action as IEntityDeleteAction).id)(state),
-    default: () => state,
-});
+const entityReducer = <T extends IEntityBase>(def:IEntityDefinition) => (state:IEntityState<T> = initialState, action:EntityAction<T>):IEntityState<T> =>
+    action.entityType === def.entity && action.module === def.module
+        ? switchOn(action.type, {
+            [EntityActionType.Add]: () => Object.assign({}, state, {
+                [(action as IEntityAddAction<T>).entity.id]: (action as IEntityAddAction<T>).entity
+            }),
+            [EntityActionType.Update]: () => Object.assign({}, state, {
+                [(action as IEntityUpdateAction<T>).entity.id]: Object.assign(
+                    {},
+                    state[(action as IEntityUpdateAction<T>).entity.id] || {},
+                    (action as IEntityUpdateAction<T>).entity)
+            }),
+            [EntityActionType.Delete]: () => remove((action as IEntityDeleteAction).id)(state),
+            default: () => state,
+          })
+        : state;
 
 export const createEntityReducer = <T extends IEntityBase>(def:IEntityDefinition):IEntityReducer<T> => ({
     [def.module]: {
@@ -35,11 +38,13 @@ export const combineReducersResursive = (obj:IReducerContainer):Reducer => combi
         .reduce(combine, {})
 );
 
+// TODO:  Create entity reducer combiner that optimizes performance
+
 // Action creators
 const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition):IEntityActions<T> => ({
-    add:(entity:T) => ({type:EntityActionType.Add, entity}),
-    update:(entity:PartialEntity<T>) => ({type: EntityActionType.Update, entity}),
-    delete:(id:string) => ({type: EntityActionType.Delete, id}),
+    add:(entity:T) => ({type:EntityActionType.Add, entity, entityType: def.entity, module: def.module}),
+    update:(entity:PartialEntity<T>) => ({type: EntityActionType.Update, entity, entityType: def.entity, module: def.module}),
+    delete:(id:string) => ({type: EntityActionType.Delete, id, entityType: def.entity, module: def.module}),
 });
 
 const getEntities = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition):PartialEntity<T>[] =>
@@ -107,7 +112,7 @@ const pageDefinition = {
     idField: "id",
 }
 
-export const arcReducer = entityReducer<IComicArc>(arcDefinition);
+export const arcReducer = createEntityReducer<IComicArc>(arcDefinition);
 export interface IArcRedux extends Entity<IComicArc> {
     pages: ChildSelector<IComicPage>;
 }
@@ -116,7 +121,7 @@ export const arcRedux:IArcRedux = {
     pages: getChildren<IComicPage>(pageDefinition, "arcId"),
 };
 
-export const pageReducer = entityReducer<IComicPage>(pageDefinition);
+export const pageReducer = createEntityReducer<IComicPage>(pageDefinition);
 export interface IPageRedux extends Entity<IComicPage> {
     arc: ParentSelector<IComicArc, IComicPage>;
 }
@@ -144,7 +149,7 @@ interface IToggleRedux {
     isOn: (state:IEntityContainer<IToggle>, id:string) => boolean;
 }
 
-export const toggleReducer = entityReducer<IToggle>(toggleDefinition);
+export const toggleReducer = createEntityReducer<IToggle>(toggleDefinition);
 export const t = entityRedux<IToggle>(toggleDefinition);
 export const toggleRedux:IToggleRedux = {
     show: (id:string) => t.update({id, isVisible: true}),

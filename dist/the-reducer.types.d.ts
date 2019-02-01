@@ -14,6 +14,8 @@ export declare enum EntityActionType {
 }
 export interface IEntityAction {
     type: EntityActionType;
+    module: string;
+    entityType: string;
 }
 export interface IEntityAddAction<T extends IEntityBase> extends IEntityAction {
     type: EntityActionType.Add;

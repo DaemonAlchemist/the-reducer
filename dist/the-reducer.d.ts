@@ -1,4 +1,4 @@
-import { PartialEntity, ChildSelector, Entity, EntityAction, IEntityAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityReducer, IEntityState, ParentSelector, IReducerContainer } from './the-reducer.types';
+import { PartialEntity, ChildSelector, Entity, IEntityAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityReducer, ParentSelector, IReducerContainer } from './the-reducer.types';
 import { AnyAction } from 'redux';
 export declare const createEntityReducer: <T extends IEntityBase>(def: IEntityDefinition) => IEntityReducer<T>;
 export declare const combineReducersResursive: (obj: IReducerContainer) => import("redux").Reducer<any, AnyAction>;
@@ -18,12 +18,12 @@ interface IComicPage {
     arcId: number;
     sequence: number;
 }
-export declare const arcReducer: (state: IEntityState<IComicArc> | undefined, action: EntityAction<IComicArc>) => IEntityState<IComicArc>;
+export declare const arcReducer: IEntityReducer<IComicArc>;
 export interface IArcRedux extends Entity<IComicArc> {
     pages: ChildSelector<IComicPage>;
 }
 export declare const arcRedux: IArcRedux;
-export declare const pageReducer: (state: IEntityState<IComicPage> | undefined, action: EntityAction<IComicPage>) => IEntityState<IComicPage>;
+export declare const pageReducer: IEntityReducer<IComicPage>;
 export interface IPageRedux extends Entity<IComicPage> {
     arc: ParentSelector<IComicArc, IComicPage>;
 }
@@ -37,7 +37,7 @@ interface IToggleRedux {
     hide: (id: string) => IEntityAction;
     isOn: (state: IEntityContainer<IToggle>, id: string) => boolean;
 }
-export declare const toggleReducer: (state: IEntityState<IToggle> | undefined, action: EntityAction<IToggle>) => IEntityState<IToggle>;
+export declare const toggleReducer: IEntityReducer<IToggle>;
 export declare const t: Entity<IToggle>;
 export declare const toggleRedux: IToggleRedux;
 export {};

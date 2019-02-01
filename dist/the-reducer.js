@@ -19,22 +19,24 @@ var initialState = {};
 var entityReducer = function (def) { return function (state, action) {
     if (state === void 0) { state = initialState; }
     var _a;
-    return atp_pointfree_1.switchOn(action.type, (_a = {},
-        _a[the_reducer_types_1.EntityActionType.Add] = function () {
-            var _a;
-            return Object.assign({}, state, (_a = {},
-                _a[action.entity.id] = action.entity,
-                _a));
-        },
-        _a[the_reducer_types_1.EntityActionType.Update] = function () {
-            var _a;
-            return Object.assign({}, state, (_a = {},
-                _a[action.entity.id] = Object.assign({}, state[action.entity.id] || {}, action.entity),
-                _a));
-        },
-        _a[the_reducer_types_1.EntityActionType.Delete] = function () { return atp_pointfree_1.remove(action.id)(state); },
-        _a.default = function () { return state; },
-        _a));
+    return action.entityType === def.entity && action.module === def.module
+        ? atp_pointfree_1.switchOn(action.type, (_a = {},
+            _a[the_reducer_types_1.EntityActionType.Add] = function () {
+                var _a;
+                return Object.assign({}, state, (_a = {},
+                    _a[action.entity.id] = action.entity,
+                    _a));
+            },
+            _a[the_reducer_types_1.EntityActionType.Update] = function () {
+                var _a;
+                return Object.assign({}, state, (_a = {},
+                    _a[action.entity.id] = Object.assign({}, state[action.entity.id] || {}, action.entity),
+                    _a));
+            },
+            _a[the_reducer_types_1.EntityActionType.Delete] = function () { return atp_pointfree_1.remove(action.id)(state); },
+            _a.default = function () { return state; },
+            _a))
+        : state;
 }; };
 exports.createEntityReducer = function (def) {
     var _a, _b;
@@ -55,11 +57,12 @@ var combine = function (combined, cur) { return Object.assign({}, combined, cur)
 exports.combineReducersResursive = function (obj) { return redux_1.combineReducers(Object.keys(obj)
     .map(function (key) { return parseItem(obj[key], key); })
     .reduce(combine, {})); };
+// TODO:  Create entity reducer combiner that optimizes performance
 // Action creators
 var createEntityActions = function (def) { return ({
-    add: function (entity) { return ({ type: the_reducer_types_1.EntityActionType.Add, entity: entity }); },
-    update: function (entity) { return ({ type: the_reducer_types_1.EntityActionType.Update, entity: entity }); },
-    delete: function (id) { return ({ type: the_reducer_types_1.EntityActionType.Delete, id: id }); },
+    add: function (entity) { return ({ type: the_reducer_types_1.EntityActionType.Add, entity: entity, entityType: def.entity, module: def.module }); },
+    update: function (entity) { return ({ type: the_reducer_types_1.EntityActionType.Update, entity: entity, entityType: def.entity, module: def.module }); },
+    delete: function (id) { return ({ type: the_reducer_types_1.EntityActionType.Delete, id: id, entityType: def.entity, module: def.module }); },
 }); };
 var getEntities = function (state, def) {
     return state[def.module] && state[def.module][def.entity]
@@ -108,16 +111,16 @@ var pageDefinition = {
     entity: "page",
     idField: "id",
 };
-exports.arcReducer = entityReducer(arcDefinition);
+exports.arcReducer = exports.createEntityReducer(arcDefinition);
 exports.arcRedux = __assign({}, exports.entityRedux(arcDefinition), { pages: exports.getChildren(pageDefinition, "arcId") });
-exports.pageReducer = entityReducer(pageDefinition);
+exports.pageReducer = exports.createEntityReducer(pageDefinition);
 exports.pageRedux = __assign({}, exports.entityRedux(pageDefinition), { arc: exports.getParent(arcDefinition, pageDefinition, "arcId") });
 var toggleDefinition = {
     module: "ui",
     entity: "toggle",
     idField: "id"
 };
-exports.toggleReducer = entityReducer(toggleDefinition);
+exports.toggleReducer = exports.createEntityReducer(toggleDefinition);
 exports.t = exports.entityRedux(toggleDefinition);
 exports.toggleRedux = {
     show: function (id) { return exports.t.update({ id: id, isVisible: true }); },

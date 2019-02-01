@@ -12,7 +12,7 @@ export interface IEntityBase {
 export type PartialEntity<T> = Partial<T> & IEntityBase;
 
 export enum EntityActionType {Add, Delete, Update};
-export interface IEntityAction {type: EntityActionType;}
+export interface IEntityAction {type: EntityActionType; module: string; entityType:string;}
 export interface IEntityAddAction<T extends IEntityBase> extends IEntityAction {type: EntityActionType.Add; entity:PartialEntity<T>;};
 export interface IEntityDeleteAction extends IEntityAction {type:EntityActionType.Delete, id:string;};
 export interface IEntityUpdateAction<T extends IEntityBase> extends IEntityAction {type:EntityActionType.Update, entity:PartialEntity<T>};
