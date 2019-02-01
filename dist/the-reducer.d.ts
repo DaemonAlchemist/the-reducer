@@ -1,7 +1,7 @@
-import { PartialEntity, ChildSelector, Entity, EntityAction, IEntityAction, IEntityActions, IEntityBase, IEntityContainer, IEntityDefinition, IEntityReducer, IEntitySelectors, IEntityState, ParentSelector } from './the-reducer.types';
+import { PartialEntity, ChildSelector, Entity, EntityAction, IEntityAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityReducer, IEntityState, ParentSelector, IReducerContainer } from './the-reducer.types';
+import { AnyAction } from 'redux';
 export declare const createEntityReducer: <T extends IEntityBase>(def: IEntityDefinition) => IEntityReducer<T>;
-export declare const createEntityActions: <T extends IEntityBase>(def: IEntityDefinition) => IEntityActions<T>;
-export declare const createEntitySelectors: <T extends IEntityBase>(def: IEntityDefinition) => IEntitySelectors<T>;
+export declare const combineReducersResursive: (obj: IReducerContainer) => import("redux").Reducer<any, AnyAction>;
 export declare const getChildren: <C extends IEntityBase>(childDef: IEntityDefinition, field: string) => ChildSelector<C>;
 export declare const getParent: <P extends IEntityBase, C extends IEntityBase>(parentDef: IEntityDefinition, childDef: IEntityDefinition, field: string) => ParentSelector<P, C>;
 export declare const getRelated: <R extends IEntityBase, B extends IEntityBase>(rDef: IEntityDefinition, bDef: IEntityDefinition, aField: string, bField: string) => (state: IEntityContainer<R> & IEntityContainer<B>, aId: string) => PartialEntity<B>[];

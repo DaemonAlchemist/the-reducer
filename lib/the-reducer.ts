@@ -1,5 +1,6 @@
 import { prop, remove, switchOn, _ } from 'atp-pointfree';
-import { PartialEntity, ChildSelector, Entity, EntityAction, EntityActionType, PartialFilter, IEntityAction, IEntityActions, IEntityAddAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityReducer, IEntitySelectors, IEntityState, IEntityUpdateAction, ParentSelector } from './the-reducer.types';
+import { Reducer, ReducerMap, PartialEntity, ChildSelector, Entity, EntityAction, EntityActionType, PartialFilter, IEntityAction, IEntityActions, IEntityAddAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityReducer, IEntitySelectors, IEntityState, IEntityUpdateAction, ParentSelector, IReducerContainer, IReducerItem} from './the-reducer.types';
+import {combineReducers, ReducersMapObject, AnyAction} from 'redux';
 
 // Reducer
 const initialState = {};
@@ -23,8 +24,19 @@ export const createEntityReducer = <T extends IEntityBase>(def:IEntityDefinition
     }
 });
 
+// Recursive reducer combiner
+const parseItem = (item:IReducerItem, key:string):ReducerMap => ({
+    [key]: typeof item === 'function' ? item : combineReducersResursive(item)
+});
+const combine = (combined:ReducerMap, cur:ReducerMap):ReducerMap => Object.assign({}, combined, cur);
+export const combineReducersResursive = (obj:IReducerContainer):Reducer => combineReducers<any, AnyAction>(
+    Object.keys(obj)
+        .map((key:string):ReducerMap => parseItem(obj[key], key))
+        .reduce(combine, {})
+);
+
 // Action creators
-export const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition):IEntityActions<T> => ({
+const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition):IEntityActions<T> => ({
     add:(entity:T) => ({type:EntityActionType.Add, entity}),
     update:(entity:PartialEntity<T>) => ({type: EntityActionType.Update, entity}),
     delete:(id:string) => ({type: EntityActionType.Delete, id}),
@@ -42,7 +54,7 @@ const getEntity = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntity
 
 // Selectors
 const selectAll = <T>() => (obj:T):boolean => true;
-export const createEntitySelectors = <T extends IEntityBase>(def:IEntityDefinition):IEntitySelectors<T> => ({
+const createEntitySelectors = <T extends IEntityBase>(def:IEntityDefinition):IEntitySelectors<T> => ({
     get:(state:IEntityContainer<T>, id:string):PartialEntity<T> | undefined => getEntity<T>(state, def, id),
     getMultiple: (state:IEntityContainer<T>, f:PartialFilter<T> = selectAll<PartialEntity<T>>()):PartialEntity<T>[] =>
         getEntities(state, def).filter(f),

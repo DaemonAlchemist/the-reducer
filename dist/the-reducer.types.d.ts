@@ -1,3 +1,4 @@
+import { AnyAction, Reducer as ReduxReducer, ReducersMapObject } from "redux";
 export interface IEntityDefinition {
     module: string;
     entity: string;
@@ -33,6 +34,12 @@ export interface IEntityReducer<T extends IEntityBase> {
         [entity: string]: EntityReducer<T>;
     };
 }
+export declare type IReducerItem = IReducerContainer | Reducer;
+export interface IReducerContainer {
+    [id: string]: IReducerItem;
+}
+export declare type Reducer = ReduxReducer<any, AnyAction>;
+export declare type ReducerMap = ReducersMapObject<any, AnyAction>;
 export interface IEntityState<T> {
     [id: string]: T;
 }

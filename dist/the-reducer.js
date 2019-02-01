@@ -13,9 +13,9 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var atp_pointfree_1 = require("atp-pointfree");
 var the_reducer_types_1 = require("./the-reducer.types");
+var redux_1 = require("redux");
 // Reducer
 var initialState = {};
-// TODO:  Validate that T's id field is a string
 var entityReducer = function (def) { return function (state, action) {
     if (state === void 0) { state = initialState; }
     var _a;
@@ -44,8 +44,19 @@ exports.createEntityReducer = function (def) {
             _b),
         _a);
 };
+// Recursive reducer combiner
+var parseItem = function (item, key) {
+    var _a;
+    return (_a = {},
+        _a[key] = typeof item === 'function' ? item : exports.combineReducersResursive(item),
+        _a);
+};
+var combine = function (combined, cur) { return Object.assign({}, combined, cur); };
+exports.combineReducersResursive = function (obj) { return redux_1.combineReducers(Object.keys(obj)
+    .map(function (key) { return parseItem(obj[key], key); })
+    .reduce(combine, {})); };
 // Action creators
-exports.createEntityActions = function (def) { return ({
+var createEntityActions = function (def) { return ({
     add: function (entity) { return ({ type: the_reducer_types_1.EntityActionType.Add, entity: entity }); },
     update: function (entity) { return ({ type: the_reducer_types_1.EntityActionType.Update, entity: entity }); },
     delete: function (id) { return ({ type: the_reducer_types_1.EntityActionType.Delete, id: id }); },
@@ -62,7 +73,7 @@ var getEntity = function (state, def, id) {
 };
 // Selectors
 var selectAll = function () { return function (obj) { return true; }; };
-exports.createEntitySelectors = function (def) { return ({
+var createEntitySelectors = function (def) { return ({
     get: function (state, id) { return getEntity(state, def, id); },
     getMultiple: function (state, f) {
         if (f === void 0) { f = selectAll(); }
@@ -86,7 +97,7 @@ exports.getRelated = function (rDef, bDef, aField, bField) {
     };
 };
 // Boilerplate
-exports.entityRedux = function (def) { return (__assign({}, exports.createEntityActions(def), exports.createEntitySelectors(def))); };
+exports.entityRedux = function (def) { return (__assign({}, createEntityActions(def), createEntitySelectors(def))); };
 var arcDefinition = {
     module: "comic",
     entity: "arc",
