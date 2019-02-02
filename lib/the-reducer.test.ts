@@ -1,10 +1,9 @@
-import { entity, getChildren, getParent, combineReducersResursive } from './the-reducer';
-import { ChildSelector, Entity, IEntityAction, IEntityContainer, IEntityReducer, ParentSelector } from './the-reducer.types';
 import * as merge from 'merge-deep';
-import {_, prop} from 'atp-pointfree';
+import { combineReducersResursive, entity, getChildren, getParent, getRelated } from './the-reducer';
+import { PartialEntity, ChildSelector, Entity, IEntityAction, IEntityContainer, IEntityReducer, ParentSelector, RelatedSelector } from './the-reducer.types';
+import { prop } from 'atp-pointfree';
 
 // ----------------------------------------------
-
 interface IComicArc {
     id:string;
     name:string;
@@ -16,7 +15,7 @@ const arcDefinition = {
     entity: "arc",
     default: {id: "", name: "", url: ""}
 }
-
+// ----------------------------------------------
 interface IComicPage {
     id:string;
     name:string;
@@ -30,23 +29,58 @@ const pageDefinition = {
     entity: "page",
     default: {id: "", name: "", description: "", arcId: "", sequence: 0}
 }
+// ----------------------------------------------
+interface IMedia {
+    id:string;
+    fileName:string;
+}
 
-export interface IArcRedux extends Entity<IComicArc> {
+const mediaDefinition = {
+    module: "media",
+    entity: "file",
+    default: {id: "", fileName: ""},
+}
+// ----------------------------------------------
+interface IPageMedia {
+    id:string;
+    pageId:string;
+    mediaId:string;
+}
+const pageMediaDefinition = {
+    module: "media",
+    entity: "pageMedia",
+    default: {id: "", pageId: "", mediaId: ""}
+}
+// ----------------------------------------------
+
+interface IArcRedux extends Entity<IComicArc> {
     pages: ChildSelector<IComicPage>;
 }
-export const arc:IArcRedux = {
+const arc:IArcRedux = {
     ...entity<IComicArc>(arcDefinition),
     pages: getChildren<IComicPage>(pageDefinition, "arcId"),
 };
 
-export interface IPageRedux extends Entity<IComicPage> {
+interface IPageRedux extends Entity<IComicPage> {
     arc: ParentSelector<IComicArc, IComicPage>;
+    files: RelatedSelector<IPageMedia, IMedia>;
 }
-export const page:IPageRedux = {
+const page:IPageRedux = {
     ...entity<IComicPage>(pageDefinition),
-    arc: getParent<IComicArc, IComicPage>(arcDefinition, pageDefinition, "arcId")
+    arc: getParent<IComicArc, IComicPage>(arcDefinition, pageDefinition, "arcId"),
+    files: getRelated<IPageMedia, IMedia>(pageMediaDefinition, mediaDefinition, "pageId", "mediaId")
 };
 
+interface IMediaRedux extends Entity<IMedia> {
+    pages: RelatedSelector<IPageMedia, IComicPage>;
+}
+const media:IMediaRedux = {
+    ...entity<IMedia>(mediaDefinition),
+    pages: getRelated<IPageMedia, IComicPage>(pageMediaDefinition, pageDefinition, "mediaId", "pageId")
+}
+
+interface IPageMediaRedux extends Entity<IPageMedia> {}
+const pageMedia:IPageMediaRedux = entity<IPageMedia>(pageMediaDefinition);
 // ----------------------------------------------
 
 interface IToggle {
@@ -67,15 +101,15 @@ interface IToggleRedux {
     isOn: (state:IEntityContainer<IToggle>, id:string) => boolean;
 }
 
-export const t = entity<IToggle>(toggleDefinition);
-export const toggle:IToggleRedux = {
+const t = entity<IToggle>(toggleDefinition);
+const toggle:IToggleRedux = {
     reducer: t.reducer,
     show: (id:string) => t.update({id, isVisible: true}),
     hide: (id:string) => t.update({id, isVisible: false}),
     isOn: (state:IEntityContainer<IToggle>, id:string) => (t.get(state, id) || {isVisible: false}).isVisible || false
 };
 
-const reducer = combineReducersResursive(merge(arc.reducer, page.reducer, toggle.reducer));
+const reducer = combineReducersResursive(merge(arc.reducer, page.reducer, toggle.reducer, media.reducer, pageMedia.reducer));
 
 it('should insert objects into an empty store', () => {
     const state = [
@@ -116,7 +150,9 @@ it("should delete objects without deleting other objects", () => {
     const state = [
         arc.add({id: "1", name: "Test Arc"}),
         arc.add({id: "2", name: "Test Arc 2"}),
+
         page.add({id: "1", name: "Test Page"}),
+
         arc.delete("1")
     ].reduce(reducer, {});
 
@@ -155,6 +191,7 @@ it("can fetch children", () => {
     const state = [
         arc.add({id: "1", name: "Test Arc"}),
         arc.add({id: "2", name: "Test Arc 2"}),
+
         page.add({id: "1", name: "Test Page", arcId: "1"}),
         page.add({id: "2", name: "Test Page 2", arcId: "1"}),
         page.add({id: "3", name: "Test Page 3", arcId: "2"}),
@@ -171,6 +208,7 @@ it("can fetch parents", () => {
     const state = [
         arc.add({id: "1", name: "Test Arc"}),
         arc.add({id: "2", name: "Test Arc 2"}),
+
         page.add({id: "1", name: "Test Page", arcId: "1"}),
         page.add({id: "2", name: "Test Page 2", arcId: "1"}),
         page.add({id: "3", name: "Test Page 3", arcId: "2"}),
@@ -178,4 +216,48 @@ it("can fetch parents", () => {
     
     expect(page.arc(state, "1").name).toEqual("Test Arc");
     expect(page.arc(state, "3").name).toEqual("Test Arc 2");
+});
+
+it("can fetch related entities", () => {
+    const state = [
+        page.add({id: "1", name: "Test Page"}),
+        page.add({id: "2", name: "Test Page 2"}),
+
+        media.add({id: "1", fileName: "testFile.png"}),
+        media.add({id: "2", fileName: "testFile2.png"}),
+        media.add({id: "3", fileName: "testFile3.png"}),
+        media.add({id: "4", fileName: "testFile4.png"}),
+
+        pageMedia.add({id: "1", mediaId: "1", pageId: "1"}),
+        pageMedia.add({id: "2", mediaId: "2", pageId: "1"}),
+        pageMedia.add({id: "3", mediaId: "3", pageId: "1"}),
+        pageMedia.add({id: "4", mediaId: "4", pageId: "1"}),
+        pageMedia.add({id: "5", mediaId: "1", pageId: "2"}),
+        pageMedia.add({id: "6", mediaId: "2", pageId: "2"}),
+    ].reduce(reducer, {});
+
+    const page1Media = page.files(state, "1");
+    const page2Media = page.files(state, "2");
+    const media1Pages = media.pages(state, "1");
+    const media2Pages = media.pages(state, "2");
+    const media3Pages = media.pages(state, "3");
+    const media4Pages = media.pages(state, "4");
+
+    expect(page1Media.length).toEqual(4);
+    expect(page1Media[0].fileName).toEqual("testFile.png");
+
+    expect(page2Media.length).toEqual(2);
+    expect(page1Media[1].fileName).toEqual("testFile2.png");
+
+    expect(media1Pages.length).toEqual(2);
+    expect(media1Pages[1].name).toEqual("Test Page 2");
+
+    expect(media2Pages.length).toEqual(2);
+    expect(media1Pages[1].name).toEqual("Test Page 2");
+
+    expect(media3Pages.length).toEqual(1);
+    expect(media1Pages[0].name).toEqual("Test Page");
+
+    expect(media4Pages.length).toEqual(1);
+    expect(media1Pages[0].name).toEqual("Test Page");
 });

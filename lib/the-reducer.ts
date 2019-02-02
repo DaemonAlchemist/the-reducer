@@ -1,6 +1,6 @@
 import { prop, remove, switchOn } from 'atp-pointfree';
 import { AnyAction, combineReducers } from 'redux';
-import { ChildSelector, Entity, EntityAction, EntityActionType, IEntityActions, IEntityAddAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityReducer, IEntitySelectors, IEntityState, IEntityUpdateAction, IReducerContainer, IReducerItem, ParentSelector, PartialEntity, PartialFilter, Reducer, ReducerMap } from './the-reducer.types';
+import { ChildSelector, Entity, EntityAction, EntityActionType, IEntityActions, IEntityAddAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityReducer, IEntitySelectors, IEntityState, IEntityUpdateAction, IReducerContainer, IReducerItem, ParentSelector, PartialEntity, PartialFilter, Reducer, ReducerMap, RelatedSelector } from './the-reducer.types';
 
 // Reducer
 const initialState = {};
@@ -73,9 +73,11 @@ export const getParent = <P extends IEntityBase, C extends IEntityBase>(parentDe
     (state:IEntityContainer<P> & IEntityContainer<C>, childId:string):PartialEntity<P> =>
         entity<P>(parentDef).get(state, prop(field)(entity<C>(childDef).get(state, childId)));
 
-export const getRelated = <R extends IEntityBase, B extends IEntityBase>(rDef:IEntityDefinition<R>, bDef:IEntityDefinition<B>, aField:string, bField:string) =>
+export const getRelated = <R extends IEntityBase, B extends IEntityBase>(rDef:IEntityDefinition<R>, bDef:IEntityDefinition<B>, aField:string, bField:string):RelatedSelector<R, B> =>
     (state:IEntityContainer<R> & IEntityContainer<B>, aId:string) => {
-        const bIds:string[] = entity<R>(rDef).getMultiple(state, (r:PartialEntity<R>) => ((<any>r)[aField] as string) === aId).map(prop(bField));
+        const bIds:string[] = entity<R>(rDef)
+            .getMultiple(state, (r:PartialEntity<R>) => ((<any>r)[aField] as string) === aId)
+            .map(prop(bField));
         return entity<B>(bDef).getMultiple(state, (b:PartialEntity<B>):boolean => bIds.includes(b.id));
     };
 
