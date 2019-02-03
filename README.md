@@ -63,3 +63,56 @@ const Component = connect<...>(
 )(SomeComponent);
 
 ```
+
+## Custom Entity Api
+
+```javascript
+// toggle.redux.ts
+
+import { entity } from 'the-reducer';
+
+interface IToggle {
+    id:string;
+    isVisible:boolean;
+}
+
+const toggleDefinition = {
+    module: "ui",
+    entity: "toggle",
+    default: {id: "", isVisible: false}
+}
+
+interface IToggleRedux {
+    reducer: IEntityReducer<IToggle>,
+    show: (id:string) => IEntityAction;
+    hide: (id:string) => IEntityAction;
+    isOn: (state:IEntityContainer<IToggle>, id:string) => boolean;
+}
+
+const t = entity<IToggle>(toggleDefinition);
+const toggle:IToggleRedux = {
+    reducer: t.reducer,
+    show: (id:string) => t.update({id, isVisible: true}),
+    hide: (id:string) => t.update({id, isVisible: false}),
+    isOn: (state:IEntityContainer<IToggle>, id:string) => (t.get(state, id) || {isVisible: false}).isVisible || false
+};
+
+// Fetching from state
+toggle.isOn(state, "toggleId"); // boolean
+
+// Dispatching changes
+dispatch(toggle.show("toggleId"));
+dispatch(toggle.hide("toggleId"));
+```
+
+## Parent/Child Relationships
+
+```javascript
+// TODO
+```
+
+## Many to Many Relationship
+
+```javascript
+// TODO
+```
