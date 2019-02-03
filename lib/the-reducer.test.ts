@@ -1,7 +1,6 @@
-import * as merge from 'merge-deep';
-import { combineReducersResursive, entity, getChildren, getParent, getRelated } from './the-reducer';
-import { PartialEntity, ChildSelector, Entity, IEntityAction, IEntityContainer, IEntityReducer, ParentSelector, RelatedSelector } from './the-reducer.types';
-import { prop } from 'atp-pointfree';
+import { entity, getChildren, getParent, getRelated, theReducer } from './the-reducer';
+import { ChildSelector, Entity, IEntityAction, IEntityContainer, IEntityReducer, ParentSelector, RelatedSelector } from './the-reducer.types';
+import { combineReducers } from 'redux';
 
 // ----------------------------------------------
 interface IComicArc {
@@ -96,8 +95,8 @@ const toggleDefinition = {
 
 interface IToggleRedux {
     reducer: IEntityReducer<IToggle>,
-    show: (id:string) => IEntityAction;
-    hide: (id:string) => IEntityAction;
+    show: (id:string) => IEntityAction<IToggle>;
+    hide: (id:string) => IEntityAction<IToggle>;
     isOn: (state:IEntityContainer<IToggle>, id:string) => boolean;
 }
 
@@ -109,12 +108,15 @@ const toggle:IToggleRedux = {
     isOn: (state:IEntityContainer<IToggle>, id:string) => t.get(state, id).isVisible || false
 };
 
-const reducer = combineReducersResursive(merge(arc.reducer, page.reducer, toggle.reducer, media.reducer, pageMedia.reducer));
+const reducer = combineReducers({
+    theReducer: theReducer(arc, page, toggle, media, pageMedia)
+});
+const initialState = {theReducer: {}};
 
 it('should insert objects into an empty store', () => {
     const state = [
         toggle.show("test")
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
 
     expect(toggle.isOn(state, "test")).toEqual(true);
 });
@@ -124,7 +126,7 @@ it('should only update specified objects', () => {
         toggle.show("test"),
         toggle.show("test2"),
         toggle.hide("test"),
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
 
     expect(toggle.isOn(state, "test")).toEqual(false);
     expect(toggle.isOn(state, "test2")).toEqual(true);
@@ -134,16 +136,16 @@ it("should not update objects of other types with the same id", () => {
     const state = [
         arc.add({id: "1", name: "Test Arc"}),
         page.add({id: "1", name: "Test Page"}),
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
 
     expect(arc.get(state, "1").name).toEqual("Test Arc");
     expect(page.get(state, "1").name).toEqual("Test Page");
 });
 
 it("should return default objects for empty stores", () => {
-    expect(toggle.isOn({}, "1")).toEqual(false);
-    expect(arc.get({}, "1").name).toEqual("");
-    expect(page.get({}, "1").name).toEqual("");
+    expect(toggle.isOn(initialState, "1")).toEqual(false);
+    expect(arc.get(initialState, "1").name).toEqual("");
+    expect(page.get(initialState, "1").name).toEqual("");
 });
 
 it("should delete objects without deleting other objects", () => {
@@ -154,7 +156,7 @@ it("should delete objects without deleting other objects", () => {
         page.add({id: "1", name: "Test Page"}),
 
         arc.delete("1")
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
 
     expect(arc.getMultiple(state, (a:any) => a).length).toEqual(1);
     expect(arc.get(state, "1").name).toEqual("");
@@ -166,7 +168,7 @@ it("should be able to fetch multiple objects", () => {
     const state = [
         arc.add({id: "1", name: "Test Arc"}),
         arc.add({id: "2", name: "Test Arc 2"}),
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
 
     const arcs = arc.getMultiple(state, (a:any) => a);
 
@@ -179,7 +181,7 @@ it("should be able to fetch and filter multiple objects", () => {
     const state = [
         arc.add({id: "1", name: "Test Arc"}),
         arc.add({id: "2", name: "Test Arc 2"}),
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
 
     const arcs = arc.getMultiple(state, (a:Partial<IComicArc>) => a.id === "2");
 
@@ -195,7 +197,7 @@ it("can fetch children", () => {
         page.add({id: "1", name: "Test Page", arcId: "1"}),
         page.add({id: "2", name: "Test Page 2", arcId: "1"}),
         page.add({id: "3", name: "Test Page 3", arcId: "2"}),
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
 
     const pages = arc.pages(state, "1");
 
@@ -212,7 +214,7 @@ it("can fetch parents", () => {
         page.add({id: "1", name: "Test Page", arcId: "1"}),
         page.add({id: "2", name: "Test Page 2", arcId: "1"}),
         page.add({id: "3", name: "Test Page 3", arcId: "2"}),
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
     
     expect(page.arc(state, "1").name).toEqual("Test Arc");
     expect(page.arc(state, "3").name).toEqual("Test Arc 2");
@@ -234,7 +236,7 @@ it("can fetch related entities", () => {
         pageMedia.add({id: "4", mediaId: "4", pageId: "1"}),
         pageMedia.add({id: "5", mediaId: "1", pageId: "2"}),
         pageMedia.add({id: "6", mediaId: "2", pageId: "2"}),
-    ].reduce(reducer, {});
+    ].reduce(reducer, initialState);
 
     const page1Media = page.files(state, "1");
     const page2Media = page.files(state, "2");
