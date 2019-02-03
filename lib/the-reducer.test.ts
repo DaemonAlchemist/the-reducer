@@ -106,7 +106,7 @@ const toggle:IToggleRedux = {
     reducer: t.reducer,
     show: (id:string) => t.update({id, isVisible: true}),
     hide: (id:string) => t.update({id, isVisible: false}),
-    isOn: (state:IEntityContainer<IToggle>, id:string) => (t.get(state, id) || {isVisible: false}).isVisible || false
+    isOn: (state:IEntityContainer<IToggle>, id:string) => t.get(state, id).isVisible || false
 };
 
 const reducer = combineReducersResursive(merge(arc.reducer, page.reducer, toggle.reducer, media.reducer, pageMedia.reducer));
