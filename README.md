@@ -33,10 +33,13 @@ export const myEntity = entity<MyEntity>(myEntityDef);
 import { myEntity } from './myEntity.redux.ts';
 import { anotherEntity } from './anotherEntity.redux.ts';
 import { aThirdEntity } from './aThirdEntity.redux.ts';
-import { combineReducersRecursive } from 'the-reducer';
+import { theReducer } from 'the-reducer';
+import { combineReducers } from 'redux';
 import merge from 'merge-deep';
 
-const reducer = combineReducersRecursive(merge(myEntity.reducer, anotherEntity.reducer, aThirdEntity.reducer));
+const reducer = combineReducers({
+    theReducer: theReducer(myEntity, anotherEntity, aThirdEntity);
+});
 
 const store = createStore(reducer, ...);
 
@@ -84,8 +87,8 @@ const toggleDefinition = {
 
 interface IToggleRedux {
     reducer: IEntityReducer<IToggle>,
-    show: (id:string) => IEntityAction;
-    hide: (id:string) => IEntityAction;
+    show: (id:string) => IEntityAction<IToggle>;
+    hide: (id:string) => IEntityAction<IToggle>;
     isOn: (state:IEntityContainer<IToggle>, id:string) => boolean;
 }
 
