@@ -131,16 +131,8 @@ The `entity` function provides everything needed to setup a new Redux reducer fo
 
 The `entity` function returns an object with several fields:
 
-- `reducer:IEntityReducer<T>` - The reducer object for your entity.  This consists of a reducer namespaced into it's module and entity type:
-  ```javascript
-  {
-      moduleName: {
-          entityName: reducerFunc(state, action)
-      }
-  }
-  ```
-  You can mostly ignore this field, since it's only purpose is to be extracted from the entity object when it is passed to the `theReducer` reducer creator function.
-- `add:(entity:PartialEntity<T>) => IEntityAddAction<T>` - An action creator which returns an add action for you entity.
+- `reducer:IEntityReducer<T>` - The reducer object for your entity.  You will mostly ignore this field, since it's only purpose is to be extracted from the entity object when it is passed to the `theReducer` reducer creator function.
+- `add:(entity:PartialEntity<T>) => IEntityAddAction<T>` - An action creator which returns an add action for your entity.
 - `update:(entity:PartialEntity<T>) => IEntityUpdateAction<T>` - An action creator which returns an update action for your entity.
 - `delete:(id:string) => IEntityDeleteAction<T>` - An action creator which returns a delete action for your entity.
 - `get:(state:IEntityContainer<T>, id:string) => PartialEntity<T>` - A selector which fetchs a single entity.
