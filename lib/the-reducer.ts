@@ -1,6 +1,7 @@
 import { prop, remove, switchOn } from 'atp-pointfree';
 import { ChildSelector, Entity, EntityAction, EntityActionType, IEntityActions, IEntityAddAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityReducer, IEntitySelectors, IEntityState, IEntityUpdateAction, IReducerContainer, IReducerItem, ParentSelector, PartialEntity, PartialFilter, RelatedSelector, ITheReducerState, IModuleState, IEntityAction, IModuleReducer, IEntityReducerContainer } from './the-reducer.types';
 import * as merge from 'merge-deep';
+import { Reducer } from 'redux';
 
 // Reducer
 const initialState = {};
@@ -28,15 +29,19 @@ const createEntityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>):IE
 });
 
 // Entity reducer combiner that optimizes performance
-export const theReducer = (...reducers:IEntityReducerContainer<any>[]) => {
-    const mergedReducers = merge(...reducers.map(prop("reducer")));
+export const theReducer = (...reducers:IEntityReducerContainer<any>[]):Reducer<ITheReducerState, IEntityAction<any>> => {
+    const mergedReducers = mergeEntityReducers(...reducers);
     return (state:ITheReducerState = {}, action:IEntityAction<any>) => switchOn(action.namespace, {
         theReducerAction: () => Object.assign({}, state, {
-            [action.module]: moduleReducer(mergedReducers[action.module])(state[action.module], action as EntityAction<any>)
+            [action.module]: moduleReducer(mergedReducers.reducer[action.module])(state[action.module], action as EntityAction<any>)
         }),
         default: () => state
     })
 };
+
+export const mergeEntityReducers = (...reducers:IEntityReducerContainer<any>[]):IEntityReducerContainer<any> => ({
+    reducer: merge(...reducers.map(prop("reducer")))
+});
 
 const moduleReducer = (reducers:IModuleReducer<any>) => (state:IModuleState = {}, action:EntityAction<any>) => Object.assign({}, state, {
     [action.entityType]: reducers[action.entityType](state[action.entityType], action)

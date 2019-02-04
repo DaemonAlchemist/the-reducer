@@ -137,3 +137,65 @@ The `entity` function returns an object with several fields:
 - `delete:(id:string) => IEntityDeleteAction<T>` - An action creator which returns a delete action for your entity.
 - `get:(state:IEntityContainer<T>, id:string) => PartialEntity<T>` - A selector which fetchs a single entity.
 - `getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => PartialEntity<T>[]` - A selector which fetches multiple entities with an optional filter.
+
+### `theReducer:(...reducers:IEntityReducerContainer<any>[]) => Reducer<ITheReducerState, IEntityAction<any>>`
+
+The `theReducer` function combines separate `EntityReducer` objects into a single optimized reducer for the `theReducer` state slice.  It is meant to be used in your main Redux file:
+
+```javascript
+const reducer = combineReducers({
+    ...,
+    theReducer: theReducer(myEntity, anotherEntity, ...),
+    ...
+});
+```
+
+### `mergeEntityReducers:(...reducers:IEntityReducerContainer<any>[]) => IEntityReducerContainer<any>`
+
+For large applications, you may want to handle related entities within a single module to avoid polluting your main Redux file with every entity in the application:
+
+```javascript
+import { myEntity } from './myEntity.ts';
+... 100 other entity imports
+
+const reducer = combineReducers({
+    theReducer: theReducer(myEntity, ...100 other entities)
+});
+```
+
+With the `mergeEntityReducers` function, you can combine related entities within a module to keep implementation details hidden:
+
+```javascript
+// myModule.redux.ts
+import { myEntity } from './myEntity.ts';
+import { anotherEntity } from './anotherEntity.ts';
+import { mergeEntityReducers } from 'the-reducer';
+
+export const myModuleReducers = mergeEntityReducers(myEntity, anotherEntity);
+
+// reduxMain.ts
+import { myModuleReducers } from './myModule';
+import { anotherModule } from './anotherModule';
+
+const reducer = combineReducers({
+    theReducer: theReducer(myModule, anotherModule)
+});
+```
+
+### `getChildren:<C>(childDef:IEntityDefinition<C>, field:string) => ChildSelector<C>`
+
+```javascript
+// TODO
+```
+
+### `getParent:<P, C>(parentDef:IEntityDefinition<P>, childDef:IEntityDefinition<C>, field:string) => ParentSelector<P, C>`
+
+```javascript
+// TODO
+```
+
+### `getRelated:<R, B>(rDef:IEntityDefinition<R>, bDef:IEntityDefinition<B>, aField:string, bField:string) => RelatedSelector<R, B>`
+
+```javascript
+// TODO
+```
