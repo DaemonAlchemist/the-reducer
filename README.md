@@ -2,6 +2,14 @@
 
 > `the-reducer` is a fully typed generic Typescript Redux reducer generator designed to work on any normalized relational data.
 
+## Features
+
+- Simple - Creating a new entity (which includes the reducer, action creators, and selectors) is as easy as defining a type, and an entity definition object.
+- Fully typed - Providing complete type hinting in IDEs.
+- Flexible - works with any kind of entity type.
+- Composable - The standard entity functions can be composed into custom entity APIs.
+- Optimized - Entity actions are processed only by the associated reducer.  Third-party actions are ignored entirely.
+
 ## Installing
 
 `npm install --save the-reducer`
@@ -171,10 +179,10 @@ import { myEntity } from './myEntity.ts';
 import { anotherEntity } from './anotherEntity.ts';
 import { mergeEntityReducers } from 'the-reducer';
 
-export const myModuleReducers = mergeEntityReducers(myEntity, anotherEntity);
+export const myModule = mergeEntityReducers(myEntity, anotherEntity);
 
 // reduxMain.ts
-import { myModuleReducers } from './myModule';
+import { myModule } from './myModule';
 import { anotherModule } from './anotherModule';
 
 const reducer = combineReducers({
