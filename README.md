@@ -35,7 +35,6 @@ import { anotherEntity } from './anotherEntity.redux.ts';
 import { aThirdEntity } from './aThirdEntity.redux.ts';
 import { theReducer } from 'the-reducer';
 import { combineReducers } from 'redux';
-import merge from 'merge-deep';
 
 const reducer = combineReducers({
     theReducer: theReducer(myEntity, anotherEntity, aThirdEntity);
@@ -119,3 +118,30 @@ dispatch(toggle.hide("toggleId"));
 ```javascript
 // TODO
 ```
+
+## API Reference
+
+### `entity:<T>(def:IEntityDefinition<T>) => Entity<T>`
+
+The `entity` function provides everything needed to setup a new Redux reducer for your entities.  The only requirement of the entity type `T` is that it has a `string` id field.  The definition `def` has three fields:
+
+- `module:string` - The name of the module containing your entity.
+- `entity:string` - The name of the type of your entity.
+- `default:T` - A default value for your entity.  This should contain default values for all fields.
+
+The `entity` function returns an object with several fields:
+
+- `reducer:IEntityReducer<T>` - The reducer object for your entity.  This consists of a reducer namespaced into it's module and entity type:
+  ```javascript
+  {
+      moduleName: {
+          entityName: reducerFunc(state, action)
+      }
+  }
+  ```
+  You can mostly ignore this field, since it's only purpose is to be extracted from the entity object when it is passed to the `theReducer` reducer creator function.
+- `add:(entity:PartialEntity<T>) => IEntityAddAction<T>` - An action creator which returns an add action for you entity.
+- `update:(entity:PartialEntity<T>) => IEntityUpdateAction<T>` - An action creator which returns an update action for your entity.
+- `delete:(id:string) => IEntityDeleteAction<T>` - An action creator which returns a delete action for your entity.
+- `get:(state:IEntityContainer<T>, id:string) => PartialEntity<T>` - A selector which fetchs a single entity.
+- `getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => PartialEntity<T>[]` - A selector which fetches multiple entities with an optional filter.
