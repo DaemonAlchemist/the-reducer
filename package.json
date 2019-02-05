@@ -6,7 +6,17 @@
   "scripts": {
     "test": "jest",
     "test-watch": "jest --watch",
-    "build": "tsc"
+    "build": "tsc",
+    "new-tag": "git push && git push origin --tags && npm publish",
+    "major": "npm version major && npm run new-tag",
+    "minor": "npm version minor && npm run new-tag",
+    "patch": "npm version patch && npm run new-tag",
+    "major-clean": "npm install && npm run major && rm -rf node_modules",
+    "minor-clean": "npm install && npm run minor && rm -rf node_modules",
+    "patch-clean": "npm install && npm run patch && rm -rf node_modules",
+    "check-dependencies": "dependency-check ./package.json && dependency-check ./package.json --unused",
+    "check": "ncu --packageFile package.json",
+    "evergreen": "ncu -ua --packageFile package.json"
   },
   "repository": {
     "type": "git",
@@ -23,9 +33,11 @@
   },
   "homepage": "https://github.com/DaemonAlchemist/the-reducer#readme",
   "devDependencies": {
-    "@types/jest": "^23.3.13",
+    "@types/jest": "^24.0.0",
     "@types/redux": "^3.6.0",
-    "jest": "^24.0.0",
+    "dependency-check": "^3.3.0",
+    "jest": "^24.1.0",
+    "npm-check-updates": "^2.15.0",
     "ts-jest": "^23.10.5",
     "typescript": "^3.3.1"
   },
