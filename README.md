@@ -167,7 +167,7 @@ arc.pages(state, props.arcId); // => IComicPage[]
 page.arc(state, props.pageId); // => IComicArc
 ```
 
-## Many to Many Relationship
+## Many to Many Relationship Example
 
 ```javascript
 interface IComicPage {
