@@ -14,7 +14,7 @@
 
 `npm install --save the-reducer`
 
-## Basic Usage
+## Basic Usage Example
 
 ```javascript
 // myEntity.redux.ts`
@@ -71,10 +71,9 @@ const Component = connect<...>(
         }
     })
 )(SomeComponent);
-
 ```
 
-## Custom Entity Api
+## Custom Entity Api Example
 
 ```javascript
 // toggle.redux.ts
@@ -107,24 +106,128 @@ const toggle:IToggleRedux = {
     isOn: (state:IEntityContainer<IToggle>, id:string) => t.get(state, id).isVisible || false
 };
 
-// Fetching from state
-toggle.isOn(state, "toggleId"); // boolean
+// Fetching data in mapStateToProps
+toggle.isOn(state, "toggleId"); // => boolean
 
-// Dispatching changes
+// Dispatching changes in mapDispatchToProps
 dispatch(toggle.show("toggleId"));
 dispatch(toggle.hide("toggleId"));
 ```
 
-## Parent/Child Relationships
+## Parent/Child Relationship Example
 
 ```javascript
-// TODO
+
+import { entity, getChildren, getParent } from 'the-reducer';
+
+interface IComicArc {
+    id:string;
+    name:string;
+    url:string;
+}
+
+const arcDefinition = {
+    module: "comic",
+    entity: "arc",
+    default: {id: "", name: "", url: ""}
+}
+
+interface IComicPage {
+    id:string;
+    name:string;
+    description:string;
+    arcId:string;
+    sequence:number;
+}
+
+const pageDefinition = {
+    module: "comic",
+    entity: "page",
+    default: {id: "", name: "", description: "", arcId: "", sequence: 0}
+}
+
+interface IArcRedux extends Entity<IComicArc> {
+    pages: ChildSelector<IComicPage>;
+}
+const arc:IArcRedux = {
+    ...entity<IComicArc>(arcDefinition),
+    pages: getChildren<IComicPage>(pageDefinition, "arcId"),
+};
+
+interface IPageRedux extends Entity<IComicPage> {
+    arc: ParentSelector<IComicArc, IComicPage>;
+}
+const page:IPageRedux = {
+    ...entity<IComicPage>(pageDefinition),
+    arc: getParent<IComicArc, IComicPage>(arcDefinition, pageDefinition, "arcId"),
+};
+
+// Fetching parents and children in mapStateToProps
+arc.pages(state, props.arcId); // => IComicPage[]
+page.arc(state, props.pageId); // => IComicArc
 ```
 
 ## Many to Many Relationship
 
 ```javascript
-// TODO
+interface IComicPage {
+    id:string;
+    name:string;
+    description:string;
+    arcId:string;
+    sequence:number;
+}
+
+const pageDefinition = {
+    module: "comic",
+    entity: "page",
+    default: {id: "", name: "", description: "", arcId: "", sequence: 0}
+}
+
+interface IMedia {
+    id:string;
+    fileName:string;
+}
+
+const mediaDefinition = {
+    module: "media",
+    entity: "file",
+    default: {id: "", fileName: ""},
+}
+
+interface IPageMedia {
+    id:string;
+    pageId:string;
+    mediaId:string;
+}
+const pageMediaDefinition = {
+    module: "media",
+    entity: "pageMedia",
+    default: {id: "", pageId: "", mediaId: ""}
+}
+
+interface IPageRedux extends Entity<IComicPage> {
+    files: RelatedSelector<IPageMedia, IMedia>;
+}
+const page:IPageRedux = {
+    ...entity<IComicPage>(pageDefinition),
+    files: getRelated<IPageMedia, IMedia>(pageMediaDefinition, mediaDefinition, "pageId", "mediaId")
+};
+
+interface IMediaRedux extends Entity<IMedia> {
+    pages: RelatedSelector<IPageMedia, IComicPage>;
+}
+const media:IMediaRedux = {
+    ...entity<IMedia>(mediaDefinition),
+    pages: getRelated<IPageMedia, IComicPage>(pageMediaDefinition, pageDefinition, "mediaId", "pageId")
+}
+
+interface IPageMediaRedux extends Entity<IPageMedia> {}
+const pageMedia:IPageMediaRedux = entity<IPageMedia>(pageMediaDefinition);
+
+// Fetching related entities in mapStateToProps
+page.files(state, props.pageId); // => IMedia[]
+media.pages(state, props.mediaId); // => IComicPage[]
 ```
 
 ## API Reference
@@ -192,18 +295,69 @@ const reducer = combineReducers({
 
 ### `getChildren:<C>(childDef:IEntityDefinition<C>, field:string) => ChildSelector<C>`
 
+The `getChildren` function returns a `ChildSelector<C>` function where `C` is the type of the children entities.  This selector function can be merged into the parent's entity to provide access to children entities:
+
 ```javascript
-// TODO
+const parent = {
+    ...entity<IParent>(parentDef),
+    children: getChildren<IChild>(childDef, "parentId")
+}
+```
+
+The child selector can then be called from the mapStateToProps function to fetch an entity's children:
+
+```javascript
+    ...
+    (state:any, props:any) => ({
+        ...
+        children: parent.children(state, props.parentId),
+        ...
+    }),
+    ...
 ```
 
 ### `getParent:<P, C>(parentDef:IEntityDefinition<P>, childDef:IEntityDefinition<C>, field:string) => ParentSelector<P, C>`
 
+The `getParent` function returns a `ParentSelector<P>` function where `P` is the type of the parent entity.  This selector function can be merged into the child's entity to provide access to the parent entity:
+
 ```javascript
-// TODO
+const child = {
+    ...entity<IChild>(childDef),
+    parent: getParent<IParent, IChild>(parentDef, childDef, "parentId")
+}
+```
+
+The parent selector can then be called from the mapStateToProps function to fetch an entity's parent:
+
+```javascript
+    ...
+    (state:any, props:any) => ({
+        ...
+        parent: child.parent(state, props.childId),
+        ...
+    }),
+    ...
 ```
 
 ### `getRelated:<R, B>(rDef:IEntityDefinition<R>, bDef:IEntityDefinition<B>, aField:string, bField:string) => RelatedSelector<R, B>`
 
+The `getRelated` function returns a `RelatedSelector<R, B>` function where `B` is the type of the related entity, and `R` is the type of the relation entity (the mapping table).  This selector function can be merged into an entity to provide access to related entities:
+
 ```javascript
-// TODO
+const myEntity = {
+    ...entity<IMyEntity>(myEntityDef),
+    otherEntities: getRelated<IMyEntityOtherEntity, IOtherEntity>(myEntityOtherEntityDef, otherEntityDef, "myEntityId", "otherEntityId")
+}
+```
+
+The related selector can then be called from the mapStateToProps function to fetch an entity's related objects:
+
+```javascript
+    ...
+    (state:any, props:any) => ({
+        ...
+        otherEntities: myEntity.otherEntities(state, props.myEntityId),
+        ...
+    })
+    ...
 ```
