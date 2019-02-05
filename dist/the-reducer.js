@@ -52,19 +52,28 @@ exports.theReducer = function () {
     for (var _i = 0; _i < arguments.length; _i++) {
         reducers[_i] = arguments[_i];
     }
-    var mergedReducers = merge.apply(void 0, reducers.map(atp_pointfree_1.prop("reducer")));
+    var mergedReducers = exports.mergeEntityReducers.apply(void 0, reducers);
     return function (state, action) {
         if (state === void 0) { state = {}; }
         return atp_pointfree_1.switchOn(action.namespace, {
             theReducerAction: function () {
                 var _a;
                 return Object.assign({}, state, (_a = {},
-                    _a[action.module] = moduleReducer(mergedReducers[action.module])(state[action.module], action),
+                    _a[action.module] = moduleReducer(mergedReducers.reducer[action.module])(state[action.module], action),
                     _a));
             },
             default: function () { return state; }
         });
     };
+};
+exports.mergeEntityReducers = function () {
+    var reducers = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        reducers[_i] = arguments[_i];
+    }
+    return ({
+        reducer: merge.apply(void 0, reducers.map(atp_pointfree_1.prop("reducer")))
+    });
 };
 var moduleReducer = function (reducers) { return function (state, action) {
     if (state === void 0) { state = {}; }
