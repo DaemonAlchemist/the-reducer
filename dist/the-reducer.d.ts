@@ -1,5 +1,5 @@
-import { ChildSelector, Entity, IEntityBase, IEntityDefinition, ParentSelector, RelatedSelector, ITheReducerState, IEntityAction, IEntityReducerContainer } from './the-reducer.types';
 import { Reducer } from 'redux';
+import { ChildSelector, Entity, IEntityAction, IEntityBase, IEntityDefinition, IEntityReducerContainer, ITheReducerState, ParentSelector, RelatedSelector } from './the-reducer.types';
 export declare const theReducer: (...reducers: IEntityReducerContainer<any>[]) => Reducer<ITheReducerState, IEntityAction<any>>;
 export declare const mergeEntityReducers: (...reducers: IEntityReducerContainer<any>[]) => IEntityReducerContainer<any>;
 export declare const getChildren: <C extends IEntityBase>(childDef: IEntityDefinition<C>, field: string) => ChildSelector<C>;

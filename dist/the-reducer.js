@@ -12,8 +12,8 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var atp_pointfree_1 = require("atp-pointfree");
-var the_reducer_types_1 = require("./the-reducer.types");
 var merge = require("merge-deep");
+var the_reducer_types_1 = require("./the-reducer.types");
 // Reducer
 var initialState = {};
 var entityReducer = function (def) { return function (state, action) {
@@ -23,17 +23,26 @@ var entityReducer = function (def) { return function (state, action) {
         ? atp_pointfree_1.switchOn(action.type, (_a = {},
             _a[the_reducer_types_1.EntityActionType.Add] = function () {
                 var _a;
-                return Object.assign({}, state, (_a = {},
-                    _a[action.entity.id] = action.entity,
-                    _a));
+                return (__assign({}, state, (_a = {}, _a[action.entity.id] = action.entity, _a)));
             },
+            _a[the_reducer_types_1.EntityActionType.AddMultiple] = function () { return (__assign({}, state, merge.apply(void 0, action.entities.map(function (entity) {
+                var _a;
+                return (_a = {},
+                    _a[entity.id] = entity,
+                    _a);
+            })))); },
             _a[the_reducer_types_1.EntityActionType.Update] = function () {
                 var _a;
-                return Object.assign({}, state, (_a = {},
-                    _a[action.entity.id] = Object.assign({}, state[action.entity.id] || {}, action.entity),
-                    _a));
+                return (__assign({}, state, (_a = {}, _a[action.entity.id] = Object.assign({}, state[action.entity.id] || {}, action.entity), _a)));
             },
+            _a[the_reducer_types_1.EntityActionType.UpdateMultiple] = function () { return (__assign({}, state, merge.apply(void 0, action.entities.map(function (entity) {
+                var _a;
+                return (_a = {},
+                    _a[entity.id] = Object.assign({}, state[entity.id] || {}, entity),
+                    _a);
+            })))); },
             _a[the_reducer_types_1.EntityActionType.Delete] = function () { return atp_pointfree_1.remove(action.id)(state); },
+            _a[the_reducer_types_1.EntityActionType.DeleteMultiple] = function () { return atp_pointfree_1.remove(action.ids)(state); },
             _a.default = function () { return state; },
             _a))
         : state;
@@ -58,9 +67,7 @@ exports.theReducer = function () {
         return atp_pointfree_1.switchOn(action.namespace, {
             theReducerAction: function () {
                 var _a;
-                return Object.assign({}, state, (_a = {},
-                    _a[action.module] = moduleReducer(mergedReducers.reducer[action.module])(state[action.module], action),
-                    _a));
+                return (__assign({}, state, (_a = {}, _a[action.module] = moduleReducer(mergedReducers.reducer[action.module])(state[action.module], action), _a)));
             },
             default: function () { return state; }
         });
@@ -83,10 +90,14 @@ var moduleReducer = function (reducers) { return function (state, action) {
         _a));
 }; };
 // Action creators
+var namespace = "theReducerAction";
 var createEntityActions = function (def) { return ({
-    add: function (entity) { return ({ namespace: "theReducerAction", type: the_reducer_types_1.EntityActionType.Add, entity: entity, entityType: def.entity, module: def.module }); },
-    update: function (entity) { return ({ namespace: "theReducerAction", type: the_reducer_types_1.EntityActionType.Update, entity: entity, entityType: def.entity, module: def.module }); },
-    delete: function (id) { return ({ namespace: "theReducerAction", type: the_reducer_types_1.EntityActionType.Delete, id: id, entityType: def.entity, module: def.module }); },
+    add: function (entity) { return ({ namespace: namespace, type: the_reducer_types_1.EntityActionType.Add, entity: entity, entityType: def.entity, module: def.module }); },
+    addMultiple: function (entities) { return ({ namespace: namespace, type: the_reducer_types_1.EntityActionType.AddMultiple, entities: entities, entityType: def.entity, module: def.module }); },
+    delete: function (id) { return ({ namespace: namespace, type: the_reducer_types_1.EntityActionType.Delete, id: id, entityType: def.entity, module: def.module }); },
+    deleteMultiple: function (ids) { return ({ namespace: namespace, type: the_reducer_types_1.EntityActionType.DeleteMultiple, ids: ids, entityType: def.entity, module: def.module }); },
+    update: function (entity) { return ({ namespace: namespace, type: the_reducer_types_1.EntityActionType.Update, entity: entity, entityType: def.entity, module: def.module }); },
+    updateMultiple: function (entities) { return ({ namespace: namespace, type: the_reducer_types_1.EntityActionType.UpdateMultiple, entities: entities, entityType: def.entity, module: def.module }); },
 }); };
 var getEntities = function (state, def) {
     return state.theReducer[def.module] && state.theReducer[def.module][def.entity]

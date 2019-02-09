@@ -243,9 +243,12 @@ The `entity` function provides everything needed to setup a new Redux reducer fo
 The `entity` function returns an object with several fields:
 
 - `reducer:IEntityReducer<T>` - The reducer object for your entity.  You will mostly ignore this field, since it's only purpose is to be extracted from the entity object when it is passed to the `theReducer` reducer creator function.
-- `add:(entity:PartialEntity<T>) => IEntityAddAction<T>` - An action creator which returns an add action for your entity.
-- `update:(entity:PartialEntity<T>) => IEntityUpdateAction<T>` - An action creator which returns an update action for your entity.
-- `delete:(id:string) => IEntityDeleteAction<T>` - An action creator which returns a delete action for your entity.
+- `add:(entity:PartialEntity<T>) => IEntityAddAction<T>` - An action creator which adds a single entity to the store.
+- `addMultiple:(entities:PartialEntity<T>[]) => IEntityAddMultipleAction<T>` - An action creator which adds multiple entities to the store.
+- `update:(entity:PartialEntity<T>) => IEntityUpdateAction<T>` - An action creator which updates a single entity in the store.
+- `updateMultiple:(entities:PartialEntity<T>[]) => IEntityUpdateAction<T>` - An action creator which updates multiple entities in the store.
+- `delete:(id:string) => IEntityDeleteAction<T>` - An action creator which deletes a single entity from the store.
+- `deleteMultiple:(ids:string[]) => IEntityDeleteAction<T>` - An action creator which deletes multiple entities from the store.
 - `get:(state:IEntityContainer<T>, id:string) => PartialEntity<T>` - A selector which fetchs a single entity.
 - `getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => PartialEntity<T>[]` - A selector which fetches multiple entities with an optional filter.
 

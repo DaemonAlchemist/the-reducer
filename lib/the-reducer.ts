@@ -1,23 +1,42 @@
 import { prop, remove, switchOn } from 'atp-pointfree';
-import { ChildSelector, Entity, EntityAction, EntityActionType, IEntityActions, IEntityAddAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityReducer, IEntitySelectors, IEntityState, IEntityUpdateAction, IReducerContainer, IReducerItem, ParentSelector, PartialEntity, PartialFilter, RelatedSelector, ITheReducerState, IModuleState, IEntityAction, IModuleReducer, IEntityReducerContainer } from './the-reducer.types';
 import * as merge from 'merge-deep';
 import { Reducer } from 'redux';
+import { ChildSelector, Entity, EntityAction, EntityActionType, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, PartialFilter, RelatedSelector } from './the-reducer.types';
 
 // Reducer
 const initialState = {};
 const entityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>) => (state:IEntityState<T> = initialState, action:EntityAction<T>):IEntityState<T> =>
     action.namespace === "theReducerAction" && action.entityType === def.entity && action.module === def.module
         ? switchOn(action.type, {
-            [EntityActionType.Add]: () => Object.assign({}, state, {
+            [EntityActionType.Add]: () => ({
+                ...state,
                 [(action as IEntityAddAction<T>).entity.id]: (action as IEntityAddAction<T>).entity
             }),
-            [EntityActionType.Update]: () => Object.assign({}, state, {
+            [EntityActionType.AddMultiple]: () => ({
+                ...state,
+                ...merge(...(action as IEntityAddMultipleAction<T>).entities.map((entity:PartialEntity<T>) => ({
+                    [entity.id]: entity
+                })))
+            }),
+            [EntityActionType.Update]: () => ({
+                ...state, 
                 [(action as IEntityUpdateAction<T>).entity.id]: Object.assign(
                     {},
                     state[(action as IEntityUpdateAction<T>).entity.id] || {},
                     (action as IEntityUpdateAction<T>).entity)
             }),
+            [EntityActionType.UpdateMultiple]: () => ({
+                ...state,
+                ...merge(...(action as IEntityUpdateMultipleAction<T>).entities.map((entity:PartialEntity<T>) => ({
+                    [entity.id]: Object.assign(
+                        {},
+                        state[entity.id] || {},
+                        entity
+                    )
+                })))
+            }),
             [EntityActionType.Delete]: () => remove((action as IEntityDeleteAction<T>).id)(state),
+            [EntityActionType.DeleteMultiple]: () => remove((action as IEntityDeleteMultipleAction<T>).ids)(state),
             default: () => state,
           })
         : state;
@@ -32,7 +51,8 @@ const createEntityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>):IE
 export const theReducer = (...reducers:IEntityReducerContainer<any>[]):Reducer<ITheReducerState, IEntityAction<any>> => {
     const mergedReducers = mergeEntityReducers(...reducers);
     return (state:ITheReducerState = {}, action:IEntityAction<any>) => switchOn(action.namespace, {
-        theReducerAction: () => Object.assign({}, state, {
+        theReducerAction: () => ({
+            ...state,
             [action.module]: moduleReducer(mergedReducers.reducer[action.module])(state[action.module], action as EntityAction<any>)
         }),
         default: () => state
@@ -48,10 +68,14 @@ const moduleReducer = (reducers:IModuleReducer<any>) => (state:IModuleState = {}
 });
 
 // Action creators
+const namespace = "theReducerAction";
 const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition<T>):IEntityActions<T> => ({
-    add:(entity:PartialEntity<T>) => ({namespace: "theReducerAction", type:EntityActionType.Add, entity, entityType: def.entity, module: def.module}),
-    update:(entity:PartialEntity<T>) => ({namespace: "theReducerAction", type: EntityActionType.Update, entity, entityType: def.entity, module: def.module}),
-    delete:(id:string) => ({namespace: "theReducerAction", type: EntityActionType.Delete, id, entityType: def.entity, module: def.module}),
+    add:(entity:PartialEntity<T>) => ({namespace, type:EntityActionType.Add, entity, entityType: def.entity, module: def.module}),
+    addMultiple:(entities:PartialEntity<T>[]) => ({namespace, type: EntityActionType.AddMultiple, entities, entityType: def.entity, module: def.module}),
+    delete:(id:string) => ({namespace, type: EntityActionType.Delete, id, entityType: def.entity, module: def.module}),
+    deleteMultiple:(ids:string[]) => ({namespace, type: EntityActionType.DeleteMultiple, ids, entityType: def.entity, module: def.module}),
+    update:(entity:PartialEntity<T>) => ({namespace, type: EntityActionType.Update, entity, entityType: def.entity, module: def.module}),
+    updateMultiple:(entities:PartialEntity<T>[]) => ({namespace, type: EntityActionType.UpdateMultiple, entities, entityType: def.entity, module: def.module}),
 });
 
 const getEntities = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>):PartialEntity<T>[] =>

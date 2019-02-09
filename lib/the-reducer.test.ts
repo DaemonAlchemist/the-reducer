@@ -121,6 +121,38 @@ it('should insert objects into an empty store', () => {
     expect(toggle.isOn(state, "test")).toEqual(true);
 });
 
+it('should insert multiple objects into a store', () => {
+    const state = [
+        arc.addMultiple([
+            {id: "1", name: "Test Arc"},
+            {id: "2", name: "Test Arc 2"},
+            {id: "3", name: "Test Arc 3"},
+        ]),
+    ].reduce(reducer, initialState);
+
+    expect(arc.get(state, "1").name).toEqual("Test Arc");
+    expect(arc.get(state, "2").name).toEqual("Test Arc 2");
+    expect(arc.get(state, "3").name).toEqual("Test Arc 3");
+});
+
+it('should update multiple objects into a store', () => {
+    const state = [
+        arc.addMultiple([
+            {id: "1", name: "Test Arc"},
+            {id: "2", name: "Test Arc 2"},
+            {id: "3", name: "Test Arc 3"},
+        ]),
+        arc.updateMultiple([
+            {id: "1", name: "Test Arc Updated"},
+            {id: "3", name: "Test Arc 3 Updated"},
+        ]),
+    ].reduce(reducer, initialState);
+
+    expect(arc.get(state, "1").name).toEqual("Test Arc Updated");
+    expect(arc.get(state, "2").name).toEqual("Test Arc 2");
+    expect(arc.get(state, "3").name).toEqual("Test Arc 3 Updated");
+});
+
 it('should only update specified objects', () => {
     const state = [
         toggle.show("test"),
@@ -162,6 +194,26 @@ it("should delete objects without deleting other objects", () => {
     expect(arc.get(state, "1").name).toEqual("");
     expect(arc.get(state, "2").name).toEqual("Test Arc 2");
     expect(page.get(state, "1").name).toEqual("Test Page");
+});
+
+it("should delete multiple objects", () => {
+    const state = [
+        arc.addMultiple([
+            {id: "1", name: "Test Arc"},
+            {id: "2", name: "Test Arc 2"},
+            {id: "3", name: "Test Arc 3"},
+            {id: "4", name: "Test Arc 4"},
+            {id: "5", name: "Test Arc 5"},
+        ]),
+        arc.deleteMultiple(["1", "3", "5"])
+    ].reduce(reducer, initialState);
+
+    expect(arc.getMultiple(state, (a:any) => a).length).toEqual(2);
+    expect(arc.get(state, "1").name).toEqual("");
+    expect(arc.get(state, "2").name).toEqual("Test Arc 2");
+    expect(arc.get(state, "3").name).toEqual("");
+    expect(arc.get(state, "4").name).toEqual("Test Arc 4");
+    expect(arc.get(state, "5").name).toEqual("");
 });
 
 it("should be able to fetch multiple objects", () => {
