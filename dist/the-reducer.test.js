@@ -104,6 +104,12 @@ it("should not update objects of other types with the same id", function () {
     expect(arc.get(state, "1").name).toEqual("Test Arc");
     expect(page.get(state, "1").name).toEqual("Test Page");
 });
+it("should provide default values for missing attributes if an non-existent entity is updated", function () {
+    var state = [
+        arc.update({ id: "1", name: "Test Arc" })
+    ].reduce(reducer, initialState);
+    expect(arc.get(state, "1").url).toEqual("");
+});
 it("should return default objects for empty stores", function () {
     expect(toggle.isOn(initialState, "1")).toEqual(false);
     expect(arc.get(initialState, "1").name).toEqual("");
