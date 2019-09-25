@@ -35,6 +35,7 @@ const entityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>) => (stat
                 ...state, 
                 [(action as IEntityUpdateAction<T>).entity.id]: Object.assign(
                     {},
+                    def.default,
                     state[(action as IEntityUpdateAction<T>).entity.id] || {},
                     (action as IEntityUpdateAction<T>).entity)
             }),
