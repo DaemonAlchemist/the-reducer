@@ -12,8 +12,26 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var atp_pointfree_1 = require("atp-pointfree");
-var merge = require("merge-deep");
 var the_reducer_types_1 = require("./the-reducer.types");
+var isObject = function (obj) { return typeof obj === 'object' && obj !== null; };
+var merge = function () {
+    var objs = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        objs[_i] = arguments[_i];
+    }
+    return objs.reduce(function (combined, obj) {
+        var newObj = __assign({}, combined);
+        Object.keys(obj).forEach(function (key) {
+            if (isObject(obj[key]) && isObject(combined[key])) {
+                newObj[key] = merge(combined[key], obj[key]);
+            }
+            else {
+                newObj[key] = obj[key];
+            }
+        });
+        return newObj;
+    }, {});
+};
 // Reducer
 var initialState = {};
 var entityReducer = function (def) { return function (state, action) {
