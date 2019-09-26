@@ -13,7 +13,7 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var atp_pointfree_1 = require("atp-pointfree");
 var the_reducer_types_1 = require("./the-reducer.types");
-var isObject = function (obj) { return typeof obj === 'object' && obj !== null; };
+var isObject = function (obj) { return typeof obj === 'object' && obj !== null && !Array.isArray(obj); };
 var merge = function () {
     var objs = [];
     for (var _i = 0; _i < arguments.length; _i++) {
@@ -51,12 +51,12 @@ var entityReducer = function (def) { return function (state, action) {
             })))); },
             _a[the_reducer_types_1.EntityActionType.Update] = function () {
                 var _a;
-                return (__assign({}, state, (_a = {}, _a[action.entity.id] = Object.assign({}, def.default, state[action.entity.id] || {}, action.entity), _a)));
+                return (__assign({}, state, (_a = {}, _a[action.entity.id] = merge(def.default, state[action.entity.id] || {}, action.entity), _a)));
             },
             _a[the_reducer_types_1.EntityActionType.UpdateMultiple] = function () { return (__assign({}, state, merge.apply(void 0, action.entities.map(function (entity) {
                 var _a;
                 return (_a = {},
-                    _a[entity.id] = Object.assign({}, state[entity.id] || {}, entity),
+                    _a[entity.id] = merge(state[entity.id] || {}, entity),
                     _a);
             })))); },
             _a[the_reducer_types_1.EntityActionType.Delete] = function () { return atp_pointfree_1.remove(action.id)(state); },

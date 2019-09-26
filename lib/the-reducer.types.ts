@@ -1,5 +1,9 @@
 import { AnyAction, Reducer as ReduxReducer, ReducersMapObject } from "redux";
 
+export type RecursivePartial<T> = {
+    [P in keyof T]?: RecursivePartial<T[P]>;
+};
+
 export interface IEntityDefinition<T> {
     module:string;
     entity:string;
@@ -10,7 +14,7 @@ export interface IEntityBase {
     id:string;
 }
 
-export type PartialEntity<T> = Partial<T> & IEntityBase;
+export type PartialEntity<T> = RecursivePartial<T> & IEntityBase;
 
 export enum EntityActionType {Add, Delete, Update, AddMultiple, DeleteMultiple, UpdateMultiple};
 export interface IEntityAction<T extends IEntityBase> {namespace: "theReducerAction", type: EntityActionType; module: string; entityType:string;}
@@ -74,8 +78,8 @@ export type Filter<T> = (entity:T) => boolean;
 export type PartialFilter<T> = (entity:PartialEntity<T>) => boolean;
 
 export interface IEntitySelectors<T> {
-    get:(state:IEntityContainer<T>, id:string) => PartialEntity<T>;
-    getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => PartialEntity<T>[];
+    get:(state:IEntityContainer<T>, id:string) => T;
+    getMultiple:(state:IEntityContainer<T>, filter:Filter<T>) => T[];
 }
 
 export interface IEntityReducerContainer<T extends IEntityBase> {
@@ -84,6 +88,6 @@ export interface IEntityReducerContainer<T extends IEntityBase> {
 
 export type Entity<T extends IEntityBase> = IEntityActions<T> & IEntitySelectors<T> & IEntityReducerContainer<T>;
 
-export type ChildSelector<C extends IEntityBase> = (state:IEntityContainer<C>, parentId:string) =>PartialEntity<C>[];
-export type ParentSelector<P extends IEntityBase, C extends IEntityBase> = (state:IEntityContainer<P> & IEntityContainer<C>, childId:string) => PartialEntity<P>;
-export type RelatedSelector<R extends IEntityBase, B extends IEntityBase> = (state:IEntityContainer<R> & IEntityContainer<B>, aId:string) => PartialEntity<B>[];
+export type ChildSelector<C extends IEntityBase> = (state:IEntityContainer<C>, parentId:string) => C[];
+export type ParentSelector<P extends IEntityBase, C extends IEntityBase> = (state:IEntityContainer<P> & IEntityContainer<C>, childId:string) => P;
+export type RelatedSelector<R extends IEntityBase, B extends IEntityBase> = (state:IEntityContainer<R> & IEntityContainer<B>, aId:string) => B[];

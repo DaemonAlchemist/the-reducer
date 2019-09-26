@@ -1,8 +1,8 @@
 import { prop, remove, switchOn } from 'atp-pointfree';
 import { Reducer } from 'redux';
-import { ChildSelector, Entity, EntityAction, EntityActionType, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, PartialFilter, RelatedSelector } from './the-reducer.types';
+import { ChildSelector, Entity, EntityAction, EntityActionType, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, PartialFilter, RelatedSelector, Filter } from './the-reducer.types';
 
-const isObject = (obj:any) => typeof obj === 'object' && obj !== null;
+const isObject = (obj:any) => typeof obj === 'object' && obj !== null && !Array.isArray(obj);
 
 const merge = (...objs:any) => objs.reduce((combined:any, obj:any) => {
     let newObj = {...combined};
@@ -33,17 +33,16 @@ const entityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>) => (stat
             }),
             [EntityActionType.Update]: () => ({
                 ...state, 
-                [(action as IEntityUpdateAction<T>).entity.id]: Object.assign(
-                    {},
+                [(action as IEntityUpdateAction<T>).entity.id]: merge(
                     def.default,
                     state[(action as IEntityUpdateAction<T>).entity.id] || {},
-                    (action as IEntityUpdateAction<T>).entity)
+                    (action as IEntityUpdateAction<T>).entity
+                )
             }),
             [EntityActionType.UpdateMultiple]: () => ({
                 ...state,
                 ...merge(...(action as IEntityUpdateMultipleAction<T>).entities.map((entity:PartialEntity<T>) => ({
-                    [entity.id]: Object.assign(
-                        {},
+                    [entity.id]: merge(
                         state[entity.id] || {},
                         entity
                     )
@@ -92,12 +91,12 @@ const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition<T>):IE
     updateMultiple:(entities:PartialEntity<T>[]) => ({namespace, type: EntityActionType.UpdateMultiple, entities, entityType: def.entity, module: def.module}),
 });
 
-const getEntities = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>):PartialEntity<T>[] =>
+const getEntities = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>):T[] =>
     state.theReducer[def.module] && state.theReducer[def.module][def.entity]
         ? Object.keys(state.theReducer[def.module][def.entity]).map((key:string) => Object.assign({}, def.default, state.theReducer[def.module][def.entity][key]))
         : [];
 
-const getEntity = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>, id:string):PartialEntity<T> =>
+const getEntity = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>, id:string):T =>
     state.theReducer[def.module] && state.theReducer[def.module][def.entity] && state.theReducer[def.module][def.entity][id]
         ? state.theReducer[def.module][def.entity][id]
         : def.default;
@@ -105,25 +104,25 @@ const getEntity = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntity
 // Selectors
 const selectAll = <T>() => (obj:T):boolean => true;
 const createEntitySelectors = <T extends IEntityBase>(def:IEntityDefinition<T>):IEntitySelectors<T> => ({
-    get:(state:IEntityContainer<T>, id:string):PartialEntity<T> => getEntity<T>(state, def, id),
-    getMultiple: (state:IEntityContainer<T>, f:PartialFilter<T> = selectAll<PartialEntity<T>>()):PartialEntity<T>[] =>
+    get:(state:IEntityContainer<T>, id:string):T => getEntity<T>(state, def, id),
+    getMultiple: (state:IEntityContainer<T>, f:Filter<T> = selectAll<T>()):T[] =>
         getEntities(state, def).filter(f),
 });
 
 export const getChildren = <C extends IEntityBase>(childDef:IEntityDefinition<C>, field:string):ChildSelector<C> =>
-    (state:IEntityContainer<C>, parentId:string):PartialEntity<C>[] =>
-        entity<C>(childDef).getMultiple(state, (child:PartialEntity<C>) => ((<any>child)[field] as string) === parentId)
+    (state:IEntityContainer<C>, parentId:string):C[] =>
+        entity<C>(childDef).getMultiple(state, (child:C) => ((<any>child)[field] as string) === parentId);
 
 export const getParent = <P extends IEntityBase, C extends IEntityBase>(parentDef:IEntityDefinition<P>, childDef:IEntityDefinition<C>, field:string):ParentSelector<P, C> =>
-    (state:IEntityContainer<P> & IEntityContainer<C>, childId:string):PartialEntity<P> =>
+    (state:IEntityContainer<P> & IEntityContainer<C>, childId:string):P =>
         entity<P>(parentDef).get(state, prop(field)(entity<C>(childDef).get(state, childId)));
 
 export const getRelated = <R extends IEntityBase, B extends IEntityBase>(rDef:IEntityDefinition<R>, bDef:IEntityDefinition<B>, aField:string, bField:string):RelatedSelector<R, B> =>
     (state:IEntityContainer<R> & IEntityContainer<B>, aId:string) => {
         const bIds:string[] = entity<R>(rDef)
-            .getMultiple(state, (r:PartialEntity<R>) => ((<any>r)[aField] as string) === aId)
+            .getMultiple(state, (r:R) => ((<any>r)[aField] as string) === aId)
             .map(prop(bField));
-        return entity<B>(bDef).getMultiple(state, (b:PartialEntity<B>):boolean => bIds.includes(b.id));
+        return entity<B>(bDef).getMultiple(state, (b:B):boolean => bIds.includes(b.id));
     };
 
 // Boilerplate

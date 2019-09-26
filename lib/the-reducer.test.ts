@@ -107,9 +107,30 @@ const toggle:IToggleRedux = {
     hide: (id:string) => t.update({id, isVisible: false}),
     isOn: (state:IEntityContainer<IToggle>, id:string) => t.get(state, id).isVisible || false
 };
+// ----------------------------------------------
+interface IComplexObject {
+    id:string;
+    name:string;
+    subObject: {
+        foo:string;
+        bar:string;
+        stuff:number[];
+    };
+    otherStuff:string[];
+}
+
+const complexObjDef = {
+    module: "test",
+    entity: "complexObj",
+    default: {id:"", name: "", subObject: {foo: "", bar: "", stuff: []}, otherStuff: []},
+};
+
+const complex = entity<IComplexObject>(complexObjDef);
+
+// ----------------------------------------------
 
 const reducer = combineReducers({
-    theReducer: theReducer(arc, page, toggle, media, pageMedia)
+    theReducer: theReducer(arc, page, toggle, media, pageMedia, complex)
 });
 const initialState = {theReducer: {}};
 
@@ -180,6 +201,26 @@ it("should provide default values for missing attributes if an non-existent enti
     ].reduce(reducer, initialState);
 
     expect(arc.get(state, "1").url).toEqual("");
+});
+
+it("should properly update nested entities", () => {
+    const state = [
+        complex.add({id: "1", name: "test", subObject: {foo: "baz", bar: "biz", stuff: [1, 2, 3]}, otherStuff: ["4", "5", "6"]}),
+        complex.add({id: "2", name: "test", subObject: {foo: "baz", bar: "biz", stuff: [1, 2, 3]}, otherStuff: ["4", "5", "6"]}),
+        complex.update({id: "1", subObject: {foo: "baz2"}}),
+    ].reduce(reducer, initialState);
+
+    expect(complex.get(state, "2").subObject.bar).toEqual("biz");
+    expect(complex.get(state, "1").subObject.bar).toEqual("biz");
+});
+
+it("should replace arrays when updating", () => {
+    const state = [
+        complex.add({id: "1", name: "test", subObject: {foo: "baz", bar: "biz", stuff: [1, 2, 3]}, otherStuff: ["4", "5", "6"]}),
+        complex.update({id: "1", otherStuff: ["7", "8", "9"]}),
+    ].reduce(reducer, initialState);
+
+    expect(complex.get(state, "1").otherStuff).toEqual(["7", "8", "9"]);
 });
 
 it("should return default objects for empty stores", () => {

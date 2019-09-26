@@ -49,8 +49,15 @@ var toggle = {
     hide: function (id) { return t.update({ id: id, isVisible: false }); },
     isOn: function (state, id) { return t.get(state, id).isVisible || false; }
 };
+var complexObjDef = {
+    module: "test",
+    entity: "complexObj",
+    default: { id: "", name: "", subObject: { foo: "", bar: "", stuff: [] }, otherStuff: [] },
+};
+var complex = the_reducer_1.entity(complexObjDef);
+// ----------------------------------------------
 var reducer = redux_1.combineReducers({
-    theReducer: the_reducer_1.theReducer(arc, page, toggle, media, pageMedia)
+    theReducer: the_reducer_1.theReducer(arc, page, toggle, media, pageMedia, complex)
 });
 var initialState = { theReducer: {} };
 it('should insert objects into an empty store', function () {
@@ -109,6 +116,22 @@ it("should provide default values for missing attributes if an non-existent enti
         arc.update({ id: "1", name: "Test Arc" })
     ].reduce(reducer, initialState);
     expect(arc.get(state, "1").url).toEqual("");
+});
+it("should properly update nested entities", function () {
+    var state = [
+        complex.add({ id: "1", name: "test", subObject: { foo: "baz", bar: "biz", stuff: [1, 2, 3] }, otherStuff: ["4", "5", "6"] }),
+        complex.add({ id: "2", name: "test", subObject: { foo: "baz", bar: "biz", stuff: [1, 2, 3] }, otherStuff: ["4", "5", "6"] }),
+        complex.update({ id: "1", subObject: { foo: "baz2" } }),
+    ].reduce(reducer, initialState);
+    expect(complex.get(state, "2").subObject.bar).toEqual("biz");
+    expect(complex.get(state, "1").subObject.bar).toEqual("biz");
+});
+it("should replace arrays when updating", function () {
+    var state = [
+        complex.add({ id: "1", name: "test", subObject: { foo: "baz", bar: "biz", stuff: [1, 2, 3] }, otherStuff: ["4", "5", "6"] }),
+        complex.update({ id: "1", otherStuff: ["7", "8", "9"] }),
+    ].reduce(reducer, initialState);
+    expect(complex.get(state, "1").otherStuff).toEqual(["7", "8", "9"]);
 });
 it("should return default objects for empty stores", function () {
     expect(toggle.isOn(initialState, "1")).toEqual(false);
