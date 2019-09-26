@@ -6,7 +6,7 @@
 
 - Simple - Creating a new entity (which includes the reducer, action creators, and selectors) is as easy as defining a type, and an entity definition object.
 - Fully typed - Providing complete type hinting in IDEs.
-- Flexible - works with any kind of entity type.
+- Flexible - works with any kind of entity type, including singleton entities.
 - Composable - The standard entity functions can be composed into custom entity APIs.
 - Optimized - Entity actions are processed only by the associated reducer.  Third-party actions are ignored entirely.
 
@@ -45,7 +45,7 @@ import { theReducer } from 'the-reducer';
 import { combineReducers } from 'redux';
 
 const reducer = combineReducers({
-    theReducer: theReducer(myEntity, anotherEntity, aThirdEntity);
+    theReducerEntities: theReducer.entity(myEntity, anotherEntity, aThirdEntity);
 });
 
 const store = createStore(reducer, ...);
@@ -233,8 +233,9 @@ media.pages(state, props.mediaId); // => IComicPage[]
 ## API Reference
 
 ### `entity:<T>(def:IEntityDefinition<T>) => Entity<T>`
+### `singleton:<T>(def:IEntityDefinition<T>) => Singleton<T>`
 
-The `entity` function provides everything needed to setup a new Redux reducer for your entities.  The only requirement of the entity type `T` is that it has a `string` id field.  The definition `def` has three fields:
+The `entity` and `singleton` functions provide everything needed to setup a new Redux reducer for your entities or singletons.  The only requirement of the entity type `T` is that it has a `string` id field (this is not needed for singletons).  The definition `def` has three fields:
 
 - `module:string` - The name of the module containing your entity.
 - `entity:string` - The name of the type of your entity.
@@ -249,35 +250,46 @@ The `entity` function returns an object with several fields:
 - `updateMultiple:(entities:PartialEntity<T>[]) => IEntityUpdateAction<T>` - An action creator which updates multiple entities in the store.
 - `delete:(id:string) => IEntityDeleteAction<T>` - An action creator which deletes a single entity from the store.
 - `deleteMultiple:(ids:string[]) => IEntityDeleteAction<T>` - An action creator which deletes multiple entities from the store.
-- `get:(state:IEntityContainer<T>, id:string) => PartialEntity<T>` - A selector which fetchs a single entity.
-- `getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => PartialEntity<T>[]` - A selector which fetches multiple entities with an optional filter.
+- `get:(state:IEntityContainer<T>, id:string) => Entity<T>` - A selector which fetchs a single entity.
+- `getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => Entity<T>[]` - A selector which fetches multiple entities with an optional filter.
 
-### `theReducer:(...reducers:IEntityReducerContainer<any>[]) => Reducer<ITheReducerState, IEntityAction<any>>`
+The `singleton` function returns an object with several fields:
 
-The `theReducer` function combines separate `EntityReducer` objects into a single optimized reducer for the `theReducer` state slice.  It is meant to be used in your main Redux file:
+- `reducer:ISingletonReducer<T>` - same as from the `entity` function.
+- `update:(entity:PartialSingleton<T>) => ISingltonUpdateAction<T>` - An action creator which updates the singleton in the store.
+- `get:(state:ISingletonContainer<T>) => T` - A selector which fetchs the singleton.
+
+### `theReducer.entity:(...reducers:IEntityReducerContainer<any>[]) => Reducer<ITheReducerState, IEntityAction<any>>`
+
+### `theReducer.singleton:(...reducers:ISingletonReducerContainer<any>[]) => Reducer<ISingletonTheReducerState, ISingletonAction<any>>`
+
+The `theReducer` functions combines separate `[Entity|Singleton]Reducer` objects into a single optimized reducer for the `theReducer[Entities|Singletons]` state slices.  It is meant to be used in your main Redux file:
 
 ```javascript
 const reducer = combineReducers({
     ...,
-    theReducer: theReducer(myEntity, anotherEntity, ...),
+    theReducerEntities: theReducer.entity(myEntity, anotherEntity, ...),
+    theReducerSingletons: theReducer.singleton(mySingleton, anotherSingleton, ...),
     ...
 });
 ```
 
 ### `mergeEntityReducers:(...reducers:IEntityReducerContainer<any>[]) => IEntityReducerContainer<any>`
 
-For large applications, you may want to handle related entities within a single module to avoid polluting your main Redux file with every entity in the application:
+### `mergeSingletonReducers:(...reducers:ISingletonReducerContainer<any>[]) => ISingletonReducerContainer<any>`
+
+For large applications, you may want to handle related entities and/or singletons within a single module to avoid polluting your main Redux file with every entity in the application:
 
 ```javascript
 import { myEntity } from './myEntity.ts';
 ... 100 other entity imports
 
 const reducer = combineReducers({
-    theReducer: theReducer(myEntity, ...100 other entities)
+    theReducerEntities: theReducer.entity(myEntity, ...100 other entities)
 });
 ```
 
-With the `mergeEntityReducers` function, you can combine related entities within a module to keep implementation details hidden:
+With the `merge[Entity|Singleton]Reducers` functions, you can combine related entities and/or singletons within a module to keep implementation details hidden:
 
 ```javascript
 // myModule.redux.ts
@@ -289,10 +301,11 @@ export const myModule = mergeEntityReducers(myEntity, anotherEntity);
 
 // reduxMain.ts
 import { myModule } from './myModule';
-import { anotherModule } from './anotherModule';
+import { anotherModuleEntities, anotherModuleSingletons } from './anotherModule';
 
 const reducer = combineReducers({
-    theReducer: theReducer(myModule, anotherModule)
+    theReducerEntities: theReducer.entity(myModule, anotherModuleEntities),
+    theReducerSingletons: theReducer.singleton(anotherModuleSingletons)
 });
 ```
 

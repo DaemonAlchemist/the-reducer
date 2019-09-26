@@ -1,4 +1,4 @@
-import { AnyAction, Reducer as ReduxReducer, ReducersMapObject } from "redux";
+import { Reducer as ReduxReducer } from "redux";
 
 export type RecursivePartial<T> = {
     [P in keyof T]?: RecursivePartial<T[P]>;
@@ -17,7 +17,7 @@ export interface IEntityBase {
 export type PartialEntity<T> = RecursivePartial<T> & IEntityBase;
 
 export enum EntityActionType {Add, Delete, Update, AddMultiple, DeleteMultiple, UpdateMultiple};
-export interface IEntityAction<T extends IEntityBase> {namespace: "theReducerAction", type: EntityActionType; module: string; entityType:string;}
+export interface IEntityAction<T extends IEntityBase> {namespace: "theReducerEntityAction", type: EntityActionType; module: string; entityType:string;}
 export interface IEntityAddAction<T extends IEntityBase> extends IEntityAction<T> {type: EntityActionType.Add; entity:PartialEntity<T>;};
 export interface IEntityAddMultipleAction<T extends IEntityBase> extends IEntityAction<T> {type: EntityActionType.AddMultiple; entities:PartialEntity<T>[];};
 export interface IEntityDeleteAction<T extends IEntityBase> extends IEntityAction<T> {type:EntityActionType.Delete, id:string;};
@@ -58,7 +58,7 @@ export interface IModuleState {
 }
 
 export interface IEntityContainer<T> {
-    theReducer: {
+    theReducerEntities: {
         [module:string]: {
             [entity:string]: IEntityState<T>;
         }

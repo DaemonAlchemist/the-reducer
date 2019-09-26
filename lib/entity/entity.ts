@@ -1,25 +1,14 @@
 import { prop, remove, switchOn } from 'atp-pointfree';
 import { Reducer } from 'redux';
-import { ChildSelector, Entity, EntityAction, EntityActionType, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, PartialFilter, RelatedSelector, Filter } from './the-reducer.types';
+import { merge } from "../util";
+import { ChildSelector, Entity, EntityAction, EntityActionType, Filter, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, RelatedSelector } from './entity.types';
 
-const isObject = (obj:any) => typeof obj === 'object' && obj !== null && !Array.isArray(obj);
-
-const merge = (...objs:any) => objs.reduce((combined:any, obj:any) => {
-    let newObj = {...combined};
-    Object.keys(obj).forEach((key:string) => {
-        if(isObject(obj[key]) && isObject(combined[key])) {
-            newObj[key] = merge(combined[key], obj[key]);
-        } else {
-            newObj[key] = obj[key];
-        }
-    });
-    return newObj;
-}, {});
+const namespace = "theReducerEntityAction";
 
 // Reducer
 const initialState = {};
 const entityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>) => (state:IEntityState<T> = initialState, action:EntityAction<T>):IEntityState<T> =>
-    action.namespace === "theReducerAction" && action.entityType === def.entity && action.module === def.module
+    action.namespace === namespace && action.entityType === def.entity && action.module === def.module
         ? switchOn(action.type, {
             [EntityActionType.Add]: () => ({
                 ...state,
@@ -61,10 +50,10 @@ const createEntityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>):IE
 });
 
 // Entity reducer combiner that optimizes performance
-export const theReducer = (...reducers:IEntityReducerContainer<any>[]):Reducer<ITheReducerState, IEntityAction<any>> => {
+export const theEntityReducer = (...reducers:IEntityReducerContainer<any>[]):Reducer<ITheReducerState, IEntityAction<any>> => {
     const mergedReducers = mergeEntityReducers(...reducers);
     return (state:ITheReducerState = {}, action:IEntityAction<any>) => switchOn(action.namespace, {
-        theReducerAction: () => ({
+        [namespace]: () => ({
             ...state,
             [action.module]: moduleReducer(mergedReducers.reducer[action.module])(state[action.module], action as EntityAction<any>)
         }),
@@ -81,7 +70,6 @@ const moduleReducer = (reducers:IModuleReducer<any>) => (state:IModuleState = {}
 });
 
 // Action creators
-const namespace = "theReducerAction";
 const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition<T>):IEntityActions<T> => ({
     add:(entity:PartialEntity<T>) => ({namespace, type:EntityActionType.Add, entity, entityType: def.entity, module: def.module}),
     addMultiple:(entities:PartialEntity<T>[]) => ({namespace, type: EntityActionType.AddMultiple, entities, entityType: def.entity, module: def.module}),
@@ -92,13 +80,13 @@ const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition<T>):IE
 });
 
 const getEntities = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>):T[] =>
-    state.theReducer[def.module] && state.theReducer[def.module][def.entity]
-        ? Object.keys(state.theReducer[def.module][def.entity]).map((key:string) => Object.assign({}, def.default, state.theReducer[def.module][def.entity][key]))
+    state.theReducerEntities[def.module] && state.theReducerEntities[def.module][def.entity]
+        ? Object.keys(state.theReducerEntities[def.module][def.entity]).map((key:string) => Object.assign({}, def.default, state.theReducerEntities[def.module][def.entity][key]))
         : [];
 
 const getEntity = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>, id:string):T =>
-    state.theReducer[def.module] && state.theReducer[def.module][def.entity] && state.theReducer[def.module][def.entity][id]
-        ? state.theReducer[def.module][def.entity][id]
+    state.theReducerEntities[def.module] && state.theReducerEntities[def.module][def.entity] && state.theReducerEntities[def.module][def.entity][id]
+        ? state.theReducerEntities[def.module][def.entity][id]
         : def.default;
 
 // Selectors

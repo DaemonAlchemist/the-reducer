@@ -1,5 +1,5 @@
-import { entity, getChildren, getParent, getRelated, theReducer } from './the-reducer';
-import { ChildSelector, Entity, IEntityAction, IEntityContainer, IEntityReducer, ParentSelector, RelatedSelector } from './the-reducer.types';
+import { entity, getChildren, getParent, getRelated, singleton, theReducer } from './index';
+import { ChildSelector, Entity, IEntityAction, IEntityContainer, IEntityReducer, ParentSelector, RelatedSelector } from './index';
 import { combineReducers } from 'redux';
 
 // ----------------------------------------------
@@ -129,10 +129,36 @@ const complex = entity<IComplexObject>(complexObjDef);
 
 // ----------------------------------------------
 
+interface ISingleton {
+    name:string;
+    stuff:string[];
+};
+
+const singletonObjDef = {
+    module: "test",
+    entity: "singleton",
+    default: {name: "", stuff: []},
+}
+
+const singletonObj2Def = {
+    module: "test2",
+    entity: "singleton2",
+    default: {name: "", stuff: []},
+}
+
+const single = singleton<ISingleton>(singletonObjDef);
+const single2 = singleton<ISingleton>(singletonObj2Def);
+
+// ----------------------------------------------
+
 const reducer = combineReducers({
-    theReducer: theReducer(arc, page, toggle, media, pageMedia, complex)
+    theReducerEntities: theReducer.entity(arc, page, toggle, media, pageMedia, complex),
+    theReducerSingletons: theReducer.singleton(single, single2),
 });
-const initialState = {theReducer: {}};
+const initialState = {
+    theReducerEntities: {},
+    theReducerSingletons: {},
+};
 
 it('should insert objects into an empty store', () => {
     const state = [
@@ -221,6 +247,26 @@ it("should replace arrays when updating", () => {
     ].reduce(reducer, initialState);
 
     expect(complex.get(state, "1").otherStuff).toEqual(["7", "8", "9"]);
+});
+
+it("should support singleton (id-less) entities", () => {
+    const state = [
+        single.update({name: "test"}),
+        single.update({stuff: ["1", "2", "3"]})
+    ].reduce(reducer, initialState);
+
+    expect(single.get(state).name).toEqual("test");
+    expect(single.get(state).stuff).toEqual(["1", "2", "3"]);
+});
+
+it("should not update unrelated singletons", () => {
+    const state = [
+        single.update({name: "test"}),
+        single2.update({name: "test2"}),
+    ].reduce(reducer, initialState);
+
+    expect(single.get(state).name).toEqual("test");
+    expect(single2.get(state).name).toEqual("test2");
 });
 
 it("should return default objects for empty stores", () => {

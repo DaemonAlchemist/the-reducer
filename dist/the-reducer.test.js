@@ -11,7 +11,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var the_reducer_1 = require("./the-reducer");
+var index_1 = require("./index");
 var redux_1 = require("redux");
 var arcDefinition = {
     module: "comic",
@@ -33,16 +33,16 @@ var pageMediaDefinition = {
     entity: "pageMedia",
     default: { id: "", pageId: "", mediaId: "" }
 };
-var arc = __assign({}, the_reducer_1.entity(arcDefinition), { pages: the_reducer_1.getChildren(pageDefinition, "arcId") });
-var page = __assign({}, the_reducer_1.entity(pageDefinition), { arc: the_reducer_1.getParent(arcDefinition, pageDefinition, "arcId"), files: the_reducer_1.getRelated(pageMediaDefinition, mediaDefinition, "pageId", "mediaId") });
-var media = __assign({}, the_reducer_1.entity(mediaDefinition), { pages: the_reducer_1.getRelated(pageMediaDefinition, pageDefinition, "mediaId", "pageId") });
-var pageMedia = the_reducer_1.entity(pageMediaDefinition);
+var arc = __assign({}, index_1.entity(arcDefinition), { pages: index_1.getChildren(pageDefinition, "arcId") });
+var page = __assign({}, index_1.entity(pageDefinition), { arc: index_1.getParent(arcDefinition, pageDefinition, "arcId"), files: index_1.getRelated(pageMediaDefinition, mediaDefinition, "pageId", "mediaId") });
+var media = __assign({}, index_1.entity(mediaDefinition), { pages: index_1.getRelated(pageMediaDefinition, pageDefinition, "mediaId", "pageId") });
+var pageMedia = index_1.entity(pageMediaDefinition);
 var toggleDefinition = {
     module: "ui",
     entity: "toggle",
     default: { id: "", isVisible: false }
 };
-var t = the_reducer_1.entity(toggleDefinition);
+var t = index_1.entity(toggleDefinition);
 var toggle = {
     reducer: t.reducer,
     show: function (id) { return t.update({ id: id, isVisible: true }); },
@@ -54,12 +54,29 @@ var complexObjDef = {
     entity: "complexObj",
     default: { id: "", name: "", subObject: { foo: "", bar: "", stuff: [] }, otherStuff: [] },
 };
-var complex = the_reducer_1.entity(complexObjDef);
+var complex = index_1.entity(complexObjDef);
+;
+var singletonObjDef = {
+    module: "test",
+    entity: "singleton",
+    default: { name: "", stuff: [] },
+};
+var singletonObj2Def = {
+    module: "test2",
+    entity: "singleton2",
+    default: { name: "", stuff: [] },
+};
+var single = index_1.singleton(singletonObjDef);
+var single2 = index_1.singleton(singletonObj2Def);
 // ----------------------------------------------
 var reducer = redux_1.combineReducers({
-    theReducer: the_reducer_1.theReducer(arc, page, toggle, media, pageMedia, complex)
+    theReducerEntities: index_1.theReducer.entity(arc, page, toggle, media, pageMedia, complex),
+    theReducerSingletons: index_1.theReducer.singleton(single, single2),
 });
-var initialState = { theReducer: {} };
+var initialState = {
+    theReducerEntities: {},
+    theReducerSingletons: {},
+};
 it('should insert objects into an empty store', function () {
     var state = [
         toggle.show("test")
@@ -132,6 +149,22 @@ it("should replace arrays when updating", function () {
         complex.update({ id: "1", otherStuff: ["7", "8", "9"] }),
     ].reduce(reducer, initialState);
     expect(complex.get(state, "1").otherStuff).toEqual(["7", "8", "9"]);
+});
+it("should support singleton (id-less) entities", function () {
+    var state = [
+        single.update({ name: "test" }),
+        single.update({ stuff: ["1", "2", "3"] })
+    ].reduce(reducer, initialState);
+    expect(single.get(state).name).toEqual("test");
+    expect(single.get(state).stuff).toEqual(["1", "2", "3"]);
+});
+it("should not update unrelated singletons", function () {
+    var state = [
+        single.update({ name: "test" }),
+        single2.update({ name: "test2" }),
+    ].reduce(reducer, initialState);
+    expect(single.get(state).name).toEqual("test");
+    expect(single2.get(state).name).toEqual("test2");
 });
 it("should return default objects for empty stores", function () {
     expect(toggle.isOn(initialState, "1")).toEqual(false);

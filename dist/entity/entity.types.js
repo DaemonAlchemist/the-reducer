@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var EntityActionType;
+(function (EntityActionType) {
+    EntityActionType[EntityActionType["Add"] = 0] = "Add";
+    EntityActionType[EntityActionType["Delete"] = 1] = "Delete";
+    EntityActionType[EntityActionType["Update"] = 2] = "Update";
+    EntityActionType[EntityActionType["AddMultiple"] = 3] = "AddMultiple";
+    EntityActionType[EntityActionType["DeleteMultiple"] = 4] = "DeleteMultiple";
+    EntityActionType[EntityActionType["UpdateMultiple"] = 5] = "UpdateMultiple";
+})(EntityActionType = exports.EntityActionType || (exports.EntityActionType = {}));
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
