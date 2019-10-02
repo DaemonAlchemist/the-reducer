@@ -17,7 +17,8 @@ export declare enum EntityActionType {
     Update = 2,
     AddMultiple = 3,
     DeleteMultiple = 4,
-    UpdateMultiple = 5
+    UpdateMultiple = 5,
+    Clear = 6
 }
 export interface IEntityAction<T extends IEntityBase> {
     namespace: "theReducerEntityAction";
@@ -49,7 +50,10 @@ export interface IEntityUpdateMultipleAction<T extends IEntityBase> extends IEnt
     type: EntityActionType.UpdateMultiple;
     entities: PartialEntity<T>[];
 }
-export declare type EntityAction<T extends IEntityBase> = IEntityAddAction<T> | IEntityDeleteAction<T> | IEntityUpdateAction<T> | IEntityAddMultipleAction<T> | IEntityDeleteMultipleAction<T> | IEntityUpdateMultipleAction<T>;
+export interface IEntityClearAction<T extends IEntityBase> extends IEntityAction<T> {
+    type: EntityActionType.Clear;
+}
+export declare type EntityAction<T extends IEntityBase> = IEntityAddAction<T> | IEntityDeleteAction<T> | IEntityUpdateAction<T> | IEntityAddMultipleAction<T> | IEntityDeleteMultipleAction<T> | IEntityUpdateMultipleAction<T> | IEntityClearAction<T>;
 export declare type EntityReducer<T extends IEntityBase> = ReduxReducer<IEntityState<T>, EntityAction<T>>;
 export interface IEntityReducer<T extends IEntityBase> {
     [module: string]: IModuleReducer<T>;
@@ -86,10 +90,12 @@ export interface IEntityActions<T extends IEntityBase> {
     updateMultiple: (entities: PartialEntity<T>[]) => IEntityUpdateMultipleAction<T>;
     delete: (id: string) => IEntityDeleteAction<T>;
     deleteMultiple: (ids: string[]) => IEntityDeleteMultipleAction<T>;
+    clear: () => IEntityClearAction<T>;
 }
 export declare type Filter<T> = (entity: T) => boolean;
 export declare type PartialFilter<T> = (entity: PartialEntity<T>) => boolean;
 export interface IEntitySelectors<T> {
+    exists: (state: IEntityContainer<T>, id: string) => boolean;
     get: (state: IEntityContainer<T>, id: string) => T;
     getMultiple: (state: IEntityContainer<T>, filter: Filter<T>) => T[];
 }

@@ -16,7 +16,7 @@ export interface IEntityBase {
 
 export type PartialEntity<T> = RecursivePartial<T> & IEntityBase;
 
-export enum EntityActionType {Add, Delete, Update, AddMultiple, DeleteMultiple, UpdateMultiple};
+export enum EntityActionType {Add, Delete, Update, AddMultiple, DeleteMultiple, UpdateMultiple, Clear};
 export interface IEntityAction<T extends IEntityBase> {namespace: "theReducerEntityAction", type: EntityActionType; module: string; entityType:string;}
 export interface IEntityAddAction<T extends IEntityBase> extends IEntityAction<T> {type: EntityActionType.Add; entity:PartialEntity<T>;};
 export interface IEntityAddMultipleAction<T extends IEntityBase> extends IEntityAction<T> {type: EntityActionType.AddMultiple; entities:PartialEntity<T>[];};
@@ -24,9 +24,11 @@ export interface IEntityDeleteAction<T extends IEntityBase> extends IEntityActio
 export interface IEntityDeleteMultipleAction<T extends IEntityBase> extends IEntityAction<T> {type:EntityActionType.DeleteMultiple, ids:string[];};
 export interface IEntityUpdateAction<T extends IEntityBase> extends IEntityAction<T> {type:EntityActionType.Update, entity:PartialEntity<T>};
 export interface IEntityUpdateMultipleAction<T extends IEntityBase> extends IEntityAction<T> {type:EntityActionType.UpdateMultiple, entities:PartialEntity<T>[]};
+export interface IEntityClearAction<T extends IEntityBase> extends IEntityAction<T> {type: EntityActionType.Clear};
 export type EntityAction<T extends IEntityBase> =
     IEntityAddAction<T> | IEntityDeleteAction<T> | IEntityUpdateAction<T> |
-    IEntityAddMultipleAction<T> | IEntityDeleteMultipleAction<T> | IEntityUpdateMultipleAction<T>;
+    IEntityAddMultipleAction<T> | IEntityDeleteMultipleAction<T> | IEntityUpdateMultipleAction<T> |
+    IEntityClearAction<T>;
 
 export type EntityReducer<T extends IEntityBase> = ReduxReducer<IEntityState<T>,EntityAction<T>>;
 
@@ -72,12 +74,14 @@ export interface IEntityActions<T extends IEntityBase> {
     updateMultiple:(entities:PartialEntity<T>[]) => IEntityUpdateMultipleAction<T>;
     delete:(id:string) => IEntityDeleteAction<T>;
     deleteMultiple:(ids:string[]) => IEntityDeleteMultipleAction<T>;
+    clear:() => IEntityClearAction<T>;
 };
 
 export type Filter<T> = (entity:T) => boolean;
 export type PartialFilter<T> = (entity:PartialEntity<T>) => boolean;
 
 export interface IEntitySelectors<T> {
+    exists:(state:IEntityContainer<T>, id:string) => boolean;
     get:(state:IEntityContainer<T>, id:string) => T;
     getMultiple:(state:IEntityContainer<T>, filter:Filter<T>) => T[];
 }

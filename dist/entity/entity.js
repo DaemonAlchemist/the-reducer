@@ -44,6 +44,7 @@ var entityReducer = function (def) { return function (state, action) {
             })))); },
             _a[entity_types_1.EntityActionType.Delete] = function () { return atp_pointfree_1.remove(action.id)(state); },
             _a[entity_types_1.EntityActionType.DeleteMultiple] = function () { return atp_pointfree_1.remove(action.ids)(state); },
+            _a[entity_types_1.EntityActionType.Clear] = function () { return ({}); },
             _a.default = function () { return state; },
             _a))
         : state;
@@ -99,6 +100,7 @@ var createEntityActions = function (def) { return ({
     deleteMultiple: function (ids) { return ({ namespace: namespace, type: entity_types_1.EntityActionType.DeleteMultiple, ids: ids, entityType: def.entity, module: def.module }); },
     update: function (entity) { return ({ namespace: namespace, type: entity_types_1.EntityActionType.Update, entity: entity, entityType: def.entity, module: def.module }); },
     updateMultiple: function (entities) { return ({ namespace: namespace, type: entity_types_1.EntityActionType.UpdateMultiple, entities: entities, entityType: def.entity, module: def.module }); },
+    clear: function () { return ({ namespace: namespace, type: entity_types_1.EntityActionType.Clear, entityType: def.entity, module: def.module }); },
 }); };
 var getEntities = function (state, def) {
     return state.theReducerEntities[def.module] && state.theReducerEntities[def.module][def.entity]
@@ -110,9 +112,13 @@ var getEntity = function (state, def, id) {
         ? state.theReducerEntities[def.module][def.entity][id]
         : def.default;
 };
+var entityExists = function (state, def, id) {
+    return !!state.theReducerEntities[def.module] && !!state.theReducerEntities[def.module][def.entity] && !!state.theReducerEntities[def.module][def.entity][id];
+};
 // Selectors
 var selectAll = function () { return function (obj) { return true; }; };
 var createEntitySelectors = function (def) { return ({
+    exists: function (state, id) { return entityExists(state, def, id); },
     get: function (state, id) { return getEntity(state, def, id); },
     getMultiple: function (state, f) {
         if (f === void 0) { f = selectAll(); }

@@ -39,6 +39,7 @@ const entityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>) => (stat
             }),
             [EntityActionType.Delete]: () => remove((action as IEntityDeleteAction<T>).id)(state),
             [EntityActionType.DeleteMultiple]: () => remove((action as IEntityDeleteMultipleAction<T>).ids)(state),
+            [EntityActionType.Clear]: () => ({}),
             default: () => state,
           })
         : state;
@@ -77,6 +78,7 @@ const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition<T>):IE
     deleteMultiple:(ids:string[]) => ({namespace, type: EntityActionType.DeleteMultiple, ids, entityType: def.entity, module: def.module}),
     update:(entity:PartialEntity<T>) => ({namespace, type: EntityActionType.Update, entity, entityType: def.entity, module: def.module}),
     updateMultiple:(entities:PartialEntity<T>[]) => ({namespace, type: EntityActionType.UpdateMultiple, entities, entityType: def.entity, module: def.module}),
+    clear: () => ({namespace, type: EntityActionType.Clear, entityType: def.entity, module: def.module}),
 });
 
 const getEntities = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>):T[] =>
@@ -89,9 +91,13 @@ const getEntity = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntity
         ? state.theReducerEntities[def.module][def.entity][id]
         : def.default;
 
+const entityExists = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>, id:string):boolean =>
+    !!state.theReducerEntities[def.module] && !!state.theReducerEntities[def.module][def.entity] && !!state.theReducerEntities[def.module][def.entity][id];
+
 // Selectors
 const selectAll = <T>() => (obj:T):boolean => true;
 const createEntitySelectors = <T extends IEntityBase>(def:IEntityDefinition<T>):IEntitySelectors<T> => ({
+    exists:(state:IEntityContainer<T>, id:string):boolean => entityExists(state, def, id),
     get:(state:IEntityContainer<T>, id:string):T => getEntity<T>(state, def, id),
     getMultiple: (state:IEntityContainer<T>, f:Filter<T> = selectAll<T>()):T[] =>
         getEntities(state, def).filter(f),

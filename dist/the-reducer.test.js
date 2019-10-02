@@ -183,6 +183,26 @@ it("should delete objects without deleting other objects", function () {
     expect(arc.get(state, "2").name).toEqual("Test Arc 2");
     expect(page.get(state, "1").name).toEqual("Test Page");
 });
+it("should be able to tell whether entities exist", function () {
+    var state = [
+        arc.add({ id: "1", name: "Test Arc" }),
+        arc.add({ id: "2", name: "Test Arc 2" }),
+        page.add({ id: "3", name: "Test Page" }),
+    ].reduce(reducer, initialState);
+    expect(arc.exists(state, "1")).toEqual(true);
+    expect(arc.exists(state, "3")).toEqual(false);
+});
+it("should be able to clear entities", function () {
+    var state = [
+        arc.add({ id: "1", name: "Test Arc" }),
+        arc.add({ id: "2", name: "Test Arc 2" }),
+        page.add({ id: "3", name: "Test Page" }),
+        arc.clear(),
+    ].reduce(reducer, initialState);
+    expect(arc.exists(state, "1")).toEqual(false);
+    expect(arc.exists(state, "2")).toEqual(false);
+    expect(page.exists(state, "3")).toEqual(true);
+});
 it("should delete multiple objects", function () {
     var state = [
         arc.addMultiple([

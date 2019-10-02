@@ -250,8 +250,10 @@ The `entity` function returns an object with several fields:
 - `updateMultiple:(entities:PartialEntity<T>[]) => IEntityUpdateAction<T>` - An action creator which updates multiple entities in the store.
 - `delete:(id:string) => IEntityDeleteAction<T>` - An action creator which deletes a single entity from the store.
 - `deleteMultiple:(ids:string[]) => IEntityDeleteAction<T>` - An action creator which deletes multiple entities from the store.
+- `clear:() => IEntityClearAction<T>` - An action to remove all entities of a given type.
 - `get:(state:IEntityContainer<T>, id:string) => Entity<T>` - A selector which fetchs a single entity.
 - `getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => Entity<T>[]` - A selector which fetches multiple entities with an optional filter.
+- `exists:(state:IEntityContainer<T>, id:string) => boolean` - A selector which determines whether a given entity exists.
 
 The `singleton` function returns an object with several fields:
 
