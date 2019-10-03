@@ -1,13 +1,13 @@
 import { prop, remove, switchOn } from 'atp-pointfree';
 import { Reducer } from 'redux';
 import { merge } from "../util";
-import { ChildSelector, Entity, EntityAction, EntityActionType, Filter, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, RelatedSelector } from './entity.types';
+import { ChildSelector, Entity, EntityAction, EntityActionType, Filter, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, RelatedSelector, IEntityCustomAction } from './entity.types';
 
 const namespace = "theReducerEntityAction";
 
 // Reducer
 const initialState = {};
-const entityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>) => (state:IEntityState<T> = initialState, action:EntityAction<T>):IEntityState<T> =>
+const entityReducer = <T extends IEntityBase, C>(def:IEntityDefinition<T, C>) => (state:IEntityState<T> = initialState, action:EntityAction<T, C>):IEntityState<T> =>
     action.namespace === namespace && action.entityType === def.entity && action.module === def.module
         ? switchOn(action.type, {
             [EntityActionType.Add]: () => ({
@@ -44,38 +44,43 @@ const entityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>) => (stat
             [EntityActionType.Delete]: () => remove((action as IEntityDeleteAction<T>).id)(state),
             [EntityActionType.DeleteMultiple]: () => remove((action as IEntityDeleteMultipleAction<T>).ids)(state),
             [EntityActionType.Clear]: () => ({}),
+            [EntityActionType.Custom]: () => def.customReducer
+                ? ((a:IEntityCustomAction<T, C>) =>
+                    (def.customReducer[a.customType] || (() => state))(state, a.data)
+                )(action as IEntityCustomAction<T, C>)
+                : state,
             default: () => state,
           })
         : state;
 
-const createEntityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>):IEntityReducer<T> => ({
+const createEntityReducer = <T extends IEntityBase, C>(def:IEntityDefinition<T, C>):IEntityReducer<T, C> => ({
     [def.module]: {
-        [def.entity]: entityReducer<T>(def)
+        [def.entity]: entityReducer<T, C>(def)
     }
 });
 
 // Entity reducer combiner that optimizes performance
-export const theEntityReducer = (...reducers:IEntityReducerContainer<any>[]):Reducer<ITheReducerState, IEntityAction<any>> => {
+export const theEntityReducer = (...reducers:IEntityReducerContainer<any, any>[]):Reducer<ITheReducerState, IEntityAction<any>> => {
     const mergedReducers = mergeEntityReducers(...reducers);
     return (state:ITheReducerState = {}, action:IEntityAction<any>) => switchOn(action.namespace, {
         [namespace]: () => ({
             ...state,
-            [action.module]: moduleReducer(mergedReducers.reducer[action.module])(state[action.module], action as EntityAction<any>)
+            [action.module]: moduleReducer(mergedReducers.reducer[action.module])(state[action.module], action as EntityAction<any, any>)
         }),
         default: () => state
     })
 };
 
-export const mergeEntityReducers = (...reducers:IEntityReducerContainer<any>[]):IEntityReducerContainer<any> => ({
+export const mergeEntityReducers = (...reducers:IEntityReducerContainer<any, any>[]):IEntityReducerContainer<any, any> => ({
     reducer: merge(...reducers.map(prop("reducer")))
 });
 
-const moduleReducer = (reducers:IModuleReducer<any>) => (state:IModuleState = {}, action:EntityAction<any>) => Object.assign({}, state, {
+const moduleReducer = (reducers:IModuleReducer<any, any>) => (state:IModuleState = {}, action:EntityAction<any, any>) => Object.assign({}, state, {
     [action.entityType]: reducers[action.entityType](state[action.entityType], action)
 });
 
 // Action creators
-const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition<T>):IEntityActions<T> => ({
+const createEntityActions = <T extends IEntityBase, C>(def:IEntityDefinition<T, C>):IEntityActions<T, C> => ({
     add:(entity:PartialEntity<T>) => ({namespace, type:EntityActionType.Add, entity, entityType: def.entity, module: def.module}),
     addMultiple:(entities:PartialEntity<T>[]) => ({namespace, type: EntityActionType.AddMultiple, entities, entityType: def.entity, module: def.module}),
     delete:(id:string) => ({namespace, type: EntityActionType.Delete, id, entityType: def.entity, module: def.module}),
@@ -83,49 +88,50 @@ const createEntityActions = <T extends IEntityBase>(def:IEntityDefinition<T>):IE
     update:(entity:PartialEntity<T>) => ({namespace, type: EntityActionType.Update, entity, entityType: def.entity, module: def.module}),
     updateMultiple:(entities:PartialEntity<T>[]) => ({namespace, type: EntityActionType.UpdateMultiple, entities, entityType: def.entity, module: def.module}),
     clear: () => ({namespace, type: EntityActionType.Clear, entityType: def.entity, module: def.module}),
+    custom: (type:string, data:C) => ({namespace, type: EntityActionType.Custom, entityType: def.entity, module: def.module, customType: type, data})
 });
 
-const getEntities = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>):T[] =>
+const getEntities = <T extends IEntityBase, C>(state:IEntityContainer<T>, def:IEntityDefinition<T, C>):T[] =>
     state.theReducerEntities[def.module] && state.theReducerEntities[def.module][def.entity]
         ? Object.keys(state.theReducerEntities[def.module][def.entity]).map((key:string) => Object.assign({}, def.default, state.theReducerEntities[def.module][def.entity][key]))
         : [];
 
-const getEntity = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>, id:string):T =>
+const getEntity = <T extends IEntityBase, C>(state:IEntityContainer<T>, def:IEntityDefinition<T, C>, id:string):T =>
     state.theReducerEntities[def.module] && state.theReducerEntities[def.module][def.entity] && state.theReducerEntities[def.module][def.entity][id]
         ? state.theReducerEntities[def.module][def.entity][id]
         : def.default;
 
-const entityExists = <T extends IEntityBase>(state:IEntityContainer<T>, def:IEntityDefinition<T>, id:string):boolean =>
+const entityExists = <T extends IEntityBase, C>(state:IEntityContainer<T>, def:IEntityDefinition<T, C>, id:string):boolean =>
     !!state.theReducerEntities[def.module] && !!state.theReducerEntities[def.module][def.entity] && !!state.theReducerEntities[def.module][def.entity][id];
 
 // Selectors
 const selectAll = <T>() => (obj:T):boolean => true;
-const createEntitySelectors = <T extends IEntityBase>(def:IEntityDefinition<T>):IEntitySelectors<T> => ({
+const createEntitySelectors = <T extends IEntityBase, C>(def:IEntityDefinition<T, C>):IEntitySelectors<T> => ({
     exists:(state:IEntityContainer<T>, id:string):boolean => entityExists(state, def, id),
-    get:(state:IEntityContainer<T>, id:string):T => getEntity<T>(state, def, id),
+    get:(state:IEntityContainer<T>, id:string):T => getEntity<T, C>(state, def, id),
     getMultiple: (state:IEntityContainer<T>, f:Filter<T> = selectAll<T>()):T[] =>
         getEntities(state, def).filter(f),
 });
 
-export const getChildren = <C extends IEntityBase>(childDef:IEntityDefinition<C>, field:string):ChildSelector<C> =>
-    (state:IEntityContainer<C>, parentId:string):C[] =>
-        entity<C>(childDef).getMultiple(state, (child:C) => ((<any>child)[field] as string) === parentId);
+export const getChildren = <T extends IEntityBase, C = {}>(childDef:IEntityDefinition<T, C>, field:string):ChildSelector<T> =>
+    (state:IEntityContainer<T>, parentId:string):T[] =>
+        entity<T, C>(childDef).getMultiple(state, (child:T) => ((<any>child)[field] as string) === parentId);
 
-export const getParent = <P extends IEntityBase, C extends IEntityBase>(parentDef:IEntityDefinition<P>, childDef:IEntityDefinition<C>, field:string):ParentSelector<P, C> =>
+export const getParent = <P extends IEntityBase, C extends IEntityBase, PC = {}, CC = {}>(parentDef:IEntityDefinition<P, PC>, childDef:IEntityDefinition<C, CC>, field:string):ParentSelector<P, C> =>
     (state:IEntityContainer<P> & IEntityContainer<C>, childId:string):P =>
-        entity<P>(parentDef).get(state, prop(field)(entity<C>(childDef).get(state, childId)));
+        entity<P, PC>(parentDef).get(state, prop(field)(entity<C, CC>(childDef).get(state, childId)));
 
-export const getRelated = <R extends IEntityBase, B extends IEntityBase>(rDef:IEntityDefinition<R>, bDef:IEntityDefinition<B>, aField:string, bField:string):RelatedSelector<R, B> =>
+export const getRelated = <R extends IEntityBase, B extends IEntityBase, RC = {}, BC = {}>(rDef:IEntityDefinition<R, RC>, bDef:IEntityDefinition<B, BC>, aField:string, bField:string):RelatedSelector<R, B> =>
     (state:IEntityContainer<R> & IEntityContainer<B>, aId:string) => {
-        const bIds:string[] = entity<R>(rDef)
+        const bIds:string[] = entity<R, RC>(rDef)
             .getMultiple(state, (r:R) => ((<any>r)[aField] as string) === aId)
             .map(prop(bField));
-        return entity<B>(bDef).getMultiple(state, (b:B):boolean => bIds.includes(b.id));
+        return entity<B, BC>(bDef).getMultiple(state, (b:B):boolean => bIds.includes(b.id));
     };
 
 // Boilerplate
-export const entity = <T extends IEntityBase>(def:IEntityDefinition<T>):Entity<T> => ({
-    ...createEntityActions<T>(def),
-    ...createEntitySelectors<T>(def),
-    reducer: createEntityReducer<T>(def),
+export const entity = <T extends IEntityBase, C = {}>(def:IEntityDefinition<T, C>):Entity<T, C> => ({
+    ...createEntityActions<T, C>(def),
+    ...createEntitySelectors<T, C>(def),
+    reducer: createEntityReducer<T, C>(def),
 });

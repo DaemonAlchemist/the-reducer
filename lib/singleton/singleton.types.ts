@@ -3,19 +3,31 @@ import { RecursivePartial } from "../entity/entity.types";
 
 export type PartialSingleton<T> = RecursivePartial<T>;
 
-export enum SingletonActionType {Update};
-export interface ISingletonAction<T> {namespace: "theReducerSingletonAction", type: SingletonActionType; module: string; entityType:string;}
-export interface ISingletonUpdateAction<T> extends ISingletonAction<T> {type:SingletonActionType.Update, entity:PartialSingleton<T>};
-export type SingletonAction<T> = ISingletonUpdateAction<T>;
+export interface ICustomSingletonReducer<T, C> {
+    [customType:string]: (state:T, data:C) => T;
+}
 
-export type SingletonReducer<T> = ReduxReducer<T, SingletonAction<T>>;
+export interface ISingletonDefinition<T, C> {
+    module:string;
+    entity:string;
+    default:T;
+    customReducer?: ICustomSingletonReducer<T, C>;
+}
 
-export interface ISingletonReducer<T> {
-    [module:string]: ISingletonModuleReducer<T>;
+export enum SingletonActionType {Update, Custom};
+export interface ISingletonAction {namespace: "theReducerSingletonAction", type: SingletonActionType; module: string; entityType:string;}
+export interface ISingletonUpdateAction<T> extends ISingletonAction {type:SingletonActionType.Update, entity:PartialSingleton<T>};
+export interface ISingletonCustomAction<T, C> extends ISingletonAction {type: SingletonActionType.Custom, customType: string, data:C}
+export type SingletonAction<T, C> = ISingletonUpdateAction<T> | ISingletonCustomAction<T, C>;
+
+export type SingletonReducer<T, C> = ReduxReducer<T, SingletonAction<T, C>>;
+
+export interface ISingletonReducer<T, C> {
+    [module:string]: ISingletonModuleReducer<T, C>;
 };
 
-export interface ISingletonModuleReducer<T> {
-    [entity:string]:SingletonReducer<T>;
+export interface ISingletonModuleReducer<T, C> {
+    [entity:string]:SingletonReducer<T, C>;
 };
 
 export interface ISingletonTheReducerState {
@@ -34,16 +46,17 @@ export interface ISingletonContainer<T> {
     }
 }
 
-export interface ISingletonActions<T> {
+export interface ISingletonActions<T, C> {
     update:(entity:PartialSingleton<T>) => ISingletonUpdateAction<T>;
+    custom:(customType:string, data:C) => ISingletonCustomAction<T, C>;
 };
 
 export interface ISingletonSelectors<T> {
     get:(state:ISingletonContainer<T>) => T;
 };
 
-export interface ISingletonReducerContainer<T> {
-    reducer: ISingletonReducer<T>;
+export interface ISingletonReducerContainer<T, C> {
+    reducer: ISingletonReducer<T, C>;
 }
 
-export type Singleton<T> = ISingletonActions<T> & ISingletonSelectors<T> & ISingletonReducerContainer<T>;
+export type Singleton<T, C> = ISingletonActions<T, C> & ISingletonSelectors<T> & ISingletonReducerContainer<T, C>;

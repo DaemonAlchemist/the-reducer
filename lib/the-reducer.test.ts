@@ -1,6 +1,7 @@
 import { entity, getChildren, getParent, getRelated, singleton, theReducer } from './index';
 import { ChildSelector, Entity, IEntityAction, IEntityContainer, IEntityReducer, ParentSelector, RelatedSelector } from './index';
 import { combineReducers } from 'redux';
+import { IEntityCustomAction, IEntityState } from './entity';
 
 // ----------------------------------------------
 interface IComicArc {
@@ -119,13 +120,27 @@ interface IComplexObject {
     otherStuff:string[];
 }
 
+interface IComplexObjectCustomAction {
+    id:string;
+    value: string;
+}
+
 const complexObjDef = {
     module: "test",
     entity: "complexObj",
     default: {id:"", name: "", subObject: {foo: "", bar: "", stuff: []}, otherStuff: []},
+    customReducer: {
+        concatOtherStuff: (state:IEntityState<IComplexObject>, data:IComplexObjectCustomAction) =>({
+            ...state,
+            [data.id]: {
+                ...state[data.id],
+                otherStuff: [...state[data.id].otherStuff, data.value]
+            }
+        }),
+    }
 };
 
-const complex = entity<IComplexObject>(complexObjDef);
+const complex = entity<IComplexObject, IComplexObjectCustomAction>(complexObjDef);
 
 // ----------------------------------------------
 
@@ -144,10 +159,16 @@ const singletonObj2Def = {
     module: "test2",
     entity: "singleton2",
     default: {name: "", stuff: []},
+    customReducer: {
+        concatStuff: (state:ISingleton, data:{value:string}):ISingleton => ({
+            ...state,
+            stuff: [...state.stuff, data.value]
+        })
+    }
 }
 
-const single = singleton<ISingleton>(singletonObjDef);
-const single2 = singleton<ISingleton>(singletonObj2Def);
+const single = singleton<ISingleton, {}>(singletonObjDef);
+const single2 = singleton<ISingleton, {value:string}>(singletonObj2Def);
 
 // ----------------------------------------------
 
@@ -258,6 +279,17 @@ it("should replace arrays when updating", () => {
 
     expect(complex.get(state, "1").otherStuff).toEqual(["7", "8", "9"]);
 });
+
+it("should support custom reducers for entities", () => {
+    const state = [
+        complex.add({id: "1", name: "test", subObject: {foo: "baz", bar: "biz", stuff: [1, 2, 3]}, otherStuff: ["4", "5", "6"]}),
+        complex.custom("concatOtherStuff", {id: "1", value: "7"}),
+    ].reduce(reducer, initialState);
+
+    expect(complex.get(state, "1").otherStuff).toEqual(["4", "5", "6", "7"]);
+});
+
+// TODO: Tests for singleton custom reducers
 
 it("should support singleton (id-less) entities", () => {
     const state = [
