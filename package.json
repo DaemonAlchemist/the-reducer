@@ -1,6 +1,6 @@
 {
   "name": "the-reducer",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "A general purpose normalized Redux entity framework",
   "main": "dist/index.js",
   "scripts": {
