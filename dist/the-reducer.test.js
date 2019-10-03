@@ -77,13 +77,21 @@ var initialState = {
     theReducerEntities: {},
     theReducerSingletons: {},
 };
-it('should insert objects into an empty store', function () {
+it('should insert entities into an empty store', function () {
     var state = [
         toggle.show("test")
     ].reduce(reducer, initialState);
     expect(toggle.isOn(state, "test")).toEqual(true);
 });
-it('should insert multiple objects into a store', function () {
+it('should update existing entities when re-adding them', function () {
+    var state = [
+        arc.add({ id: "1", name: "Test", url: "/test-url" }),
+        arc.add({ id: "1", name: "NewTest" }),
+    ].reduce(reducer, initialState);
+    expect(arc.get(state, "1").name).toEqual("NewTest");
+    expect(arc.get(state, "1").url).toEqual("/test-url");
+});
+it('should insert multiple entities into a store', function () {
     var state = [
         arc.addMultiple([
             { id: "1", name: "Test Arc" },
@@ -95,7 +103,7 @@ it('should insert multiple objects into a store', function () {
     expect(arc.get(state, "2").name).toEqual("Test Arc 2");
     expect(arc.get(state, "3").name).toEqual("Test Arc 3");
 });
-it('should update multiple objects into a store', function () {
+it('should update multiple entities into a store', function () {
     var state = [
         arc.addMultiple([
             { id: "1", name: "Test Arc" },
@@ -111,7 +119,7 @@ it('should update multiple objects into a store', function () {
     expect(arc.get(state, "2").name).toEqual("Test Arc 2");
     expect(arc.get(state, "3").name).toEqual("Test Arc 3 Updated");
 });
-it('should only update specified objects', function () {
+it('should only update specified entities', function () {
     var state = [
         toggle.show("test"),
         toggle.show("test2"),
@@ -120,7 +128,7 @@ it('should only update specified objects', function () {
     expect(toggle.isOn(state, "test")).toEqual(false);
     expect(toggle.isOn(state, "test2")).toEqual(true);
 });
-it("should not update objects of other types with the same id", function () {
+it("should not update entities of other types with the same id", function () {
     var state = [
         arc.add({ id: "1", name: "Test Arc" }),
         page.add({ id: "1", name: "Test Page" }),
@@ -203,7 +211,7 @@ it("should be able to clear entities", function () {
     expect(arc.exists(state, "2")).toEqual(false);
     expect(page.exists(state, "3")).toEqual(true);
 });
-it("should delete multiple objects", function () {
+it("should delete multiple entities", function () {
     var state = [
         arc.addMultiple([
             { id: "1", name: "Test Arc" },
@@ -221,7 +229,7 @@ it("should delete multiple objects", function () {
     expect(arc.get(state, "4").name).toEqual("Test Arc 4");
     expect(arc.get(state, "5").name).toEqual("");
 });
-it("should be able to fetch multiple objects", function () {
+it("should be able to fetch multiple entities", function () {
     var state = [
         arc.add({ id: "1", name: "Test Arc" }),
         arc.add({ id: "2", name: "Test Arc 2" }),
@@ -231,7 +239,7 @@ it("should be able to fetch multiple objects", function () {
     expect(arcs[0].name).toEqual("Test Arc");
     expect(arcs[1].name).toEqual("Test Arc 2");
 });
-it("should be able to fetch and filter multiple objects", function () {
+it("should be able to fetch and filter multiple entities", function () {
     var state = [
         arc.add({ id: "1", name: "Test Arc" }),
         arc.add({ id: "2", name: "Test Arc 2" }),

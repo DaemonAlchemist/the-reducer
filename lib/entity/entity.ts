@@ -12,7 +12,11 @@ const entityReducer = <T extends IEntityBase>(def:IEntityDefinition<T>) => (stat
         ? switchOn(action.type, {
             [EntityActionType.Add]: () => ({
                 ...state,
-                [(action as IEntityAddAction<T>).entity.id]: (action as IEntityAddAction<T>).entity
+                [(action as IEntityAddAction<T>).entity.id]: {
+                    ...def.default,
+                    ...(!!state[(action as IEntityAddAction<T>).entity.id] ? state[(action as IEntityAddAction<T>).entity.id] : {}),
+                    ...(action as IEntityAddAction<T>).entity
+                }
             }),
             [EntityActionType.AddMultiple]: () => ({
                 ...state,

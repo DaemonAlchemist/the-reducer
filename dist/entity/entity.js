@@ -24,7 +24,7 @@ var entityReducer = function (def) { return function (state, action) {
         ? atp_pointfree_1.switchOn(action.type, (_a = {},
             _a[entity_types_1.EntityActionType.Add] = function () {
                 var _a;
-                return (__assign({}, state, (_a = {}, _a[action.entity.id] = action.entity, _a)));
+                return (__assign({}, state, (_a = {}, _a[action.entity.id] = __assign({}, def.default, (!!state[action.entity.id] ? state[action.entity.id] : {}), action.entity), _a)));
             },
             _a[entity_types_1.EntityActionType.AddMultiple] = function () { return (__assign({}, state, util_1.merge.apply(void 0, action.entities.map(function (entity) {
                 var _a;
