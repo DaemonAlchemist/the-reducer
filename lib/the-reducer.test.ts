@@ -269,6 +269,7 @@ it("should properly update nested entities", () => {
 
     expect(complex.get(state, "2").subObject.bar).toEqual("biz");
     expect(complex.get(state, "1").subObject.bar).toEqual("biz");
+    expect(complex.get(state, "1").subObject.foo).toEqual("baz2");
 });
 
 it("should replace arrays when updating", () => {
