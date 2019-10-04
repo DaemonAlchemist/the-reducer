@@ -62,7 +62,7 @@ const createSingletonSelectors = <T, C>(def:ISingletonDefinition<T, C>):ISinglet
 });
 
 // Boilerplate
-export const singleton = <T, C>(def:ISingletonDefinition<T, C>):Singleton<T, C> => ({
+export const singleton = <T, C = {}>(def:ISingletonDefinition<T, C>):Singleton<T, C> => ({
     ...createSingletonActions<T, C>(def),
     ...createSingletonSelectors<T, C>(def),
     reducer: createSingletonReducer<T, C>(def),

@@ -156,9 +156,12 @@ it("should properly update nested entities", function () {
         complex.add({ id: "1", name: "test", subObject: { foo: "baz", bar: "biz", stuff: [1, 2, 3] }, otherStuff: ["4", "5", "6"] }),
         complex.add({ id: "2", name: "test", subObject: { foo: "baz", bar: "biz", stuff: [1, 2, 3] }, otherStuff: ["4", "5", "6"] }),
         complex.update({ id: "1", subObject: { foo: "baz2" } }),
+        complex.update({ id: "3", subObject: { foo: "baz3" } }),
     ].reduce(reducer, initialState);
     expect(complex.get(state, "2").subObject.bar).toEqual("biz");
     expect(complex.get(state, "1").subObject.bar).toEqual("biz");
+    expect(complex.get(state, "1").subObject.foo).toEqual("baz2");
+    expect(complex.get(state, "3").subObject.foo).toEqual("baz3");
 });
 it("should replace arrays when updating", function () {
     var state = [
