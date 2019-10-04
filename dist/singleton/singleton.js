@@ -22,6 +22,11 @@ var singletonReducer = function (def) { return function (state, action) {
     return action.namespace === namespace && action.entityType === def.entity && action.module === def.module
         ? atp_pointfree_1.switchOn(action.type, (_a = {},
             _a[singleton_types_1.SingletonActionType.Update] = function () { return util_1.merge(state, action.entity); },
+            _a[singleton_types_1.SingletonActionType.Custom] = function () { return def.customReducer
+                ? (function (a) {
+                    return (def.customReducer[a.customType] || (function () { return state; }))(state, a.data);
+                })(action)
+                : state; },
             _a.default = function () { return state; },
             _a))
         : state;
@@ -72,6 +77,7 @@ var moduleReducer = function (reducers) { return function (state, action) {
 // Action creators
 var createSingletonActions = function (def) { return ({
     update: function (entity) { return ({ namespace: namespace, type: singleton_types_1.SingletonActionType.Update, entity: entity, entityType: def.entity, module: def.module }); },
+    custom: function (customType, data) { return ({ namespace: namespace, type: singleton_types_1.SingletonActionType.Custom, customType: customType, entityType: def.entity, module: def.module, data: data }); },
 }); };
 var getSingleton = function (state, def) {
     return state.theReducerSingletons[def.module] && state.theReducerSingletons[def.module][def.entity]

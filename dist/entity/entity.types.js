@@ -9,6 +9,7 @@ var EntityActionType;
     EntityActionType[EntityActionType["DeleteMultiple"] = 4] = "DeleteMultiple";
     EntityActionType[EntityActionType["UpdateMultiple"] = 5] = "UpdateMultiple";
     EntityActionType[EntityActionType["Clear"] = 6] = "Clear";
+    EntityActionType[EntityActionType["Custom"] = 7] = "Custom";
 })(EntityActionType = exports.EntityActionType || (exports.EntityActionType = {}));
 ;
 ;

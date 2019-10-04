@@ -289,7 +289,15 @@ it("should support custom reducers for entities", () => {
     expect(complex.get(state, "1").otherStuff).toEqual(["4", "5", "6", "7"]);
 });
 
-// TODO: Tests for singleton custom reducers
+it("should support custom reducers for singletons", () => {
+    const state = [
+        single2.update({name: "Test", stuff: ["1", "2", "3"]}),
+        single2.custom("concatStuff", {value: "4"}),
+    ].reduce(reducer, initialState);
+
+    expect(single2.get(state).name).toEqual("Test");
+    expect(single2.get(state).stuff).toEqual(["1", "2", "3", "4"]);
+});
 
 it("should support singleton (id-less) entities", () => {
     const state = [

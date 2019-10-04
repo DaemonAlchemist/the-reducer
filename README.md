@@ -232,18 +232,19 @@ media.pages(state, props.mediaId); // => IComicPage[]
 
 ## API Reference
 
-### `entity:<T>(def:IEntityDefinition<T>) => Entity<T>`
-### `singleton:<T>(def:IEntityDefinition<T>) => Singleton<T>`
+### `entity:<T, C = {}>(def:IEntityDefinition<T, C>) => Entity<T, C>`
+### `singleton:<T, C = {}>(def:IEntityDefinition<T>) => Singleton<T, C>`
 
-The `entity` and `singleton` functions provide everything needed to setup a new Redux reducer for your entities or singletons.  The only requirement of the entity type `T` is that it has a `string` id field (this is not needed for singletons).  The definition `def` has three fields:
+The `entity` and `singleton` functions provide everything needed to setup a new Redux reducer for your entities or singletons.  The only requirement of the entity type `T` is that it has a `string` id field (this is not needed for singletons).  `C` is optional and is the type of data needed for any custom reducers.  The definition `def` has four fields:
 
 - `module:string` - The name of the module containing your entity.
 - `entity:string` - The name of the type of your entity.
 - `default:T` - A default value for your entity.  This should contain default values for all fields.
+- `customReducer?:ICustom[Entity|Singleton]Reducer<T, C>` - An object containing custom reducers for this entity or singleton.  The object keys are the custom reducer names, and the values are reducer functions in the form of `(state:IEntityState<T>, data:C) => IEntityState<T>` for entities and `(state:T, data:C) => T` for singletons.
 
 The `entity` function returns an object with several fields:
 
-- `reducer:IEntityReducer<T>` - The reducer object for your entity.  You will mostly ignore this field, since it's only purpose is to be extracted from the entity object when it is passed to the `theReducer` reducer creator function.
+- `reducer:IEntityReducer<T, C>` - The reducer object for your entity.  You will mostly ignore this field, since it's only purpose is to be extracted from the entity object when it is passed to the `theReducer` reducer creator function.
 - `add:(entity:PartialEntity<T>) => IEntityAddAction<T>` - An action creator which adds a single entity to the store.
 - `addMultiple:(entities:PartialEntity<T>[]) => IEntityAddMultipleAction<T>` - An action creator which adds multiple entities to the store.
 - `update:(entity:PartialEntity<T>) => IEntityUpdateAction<T>` - An action creator which updates a single entity in the store.
@@ -251,6 +252,7 @@ The `entity` function returns an object with several fields:
 - `delete:(id:string) => IEntityDeleteAction<T>` - An action creator which deletes a single entity from the store.
 - `deleteMultiple:(ids:string[]) => IEntityDeleteAction<T>` - An action creator which deletes multiple entities from the store.
 - `clear:() => IEntityClearAction<T>` - An action to remove all entities of a given type.
+- `custom:(type:string, data:C) => IEntityCustomAction<T, C>` - Apply a custom action to the entities.
 - `get:(state:IEntityContainer<T>, id:string) => Entity<T>` - A selector which fetchs a single entity.
 - `getMultiple:(state:IEntityContainer<T>, filter:Filter<PartialEntity<T>>) => Entity<T>[]` - A selector which fetches multiple entities with an optional filter.
 - `exists:(state:IEntityContainer<T>, id:string) => boolean` - A selector which determines whether a given entity exists.
@@ -261,9 +263,9 @@ The `singleton` function returns an object with several fields:
 - `update:(entity:PartialSingleton<T>) => ISingltonUpdateAction<T>` - An action creator which updates the singleton in the store.
 - `get:(state:ISingletonContainer<T>) => T` - A selector which fetchs the singleton.
 
-### `theReducer.entity:(...reducers:IEntityReducerContainer<any>[]) => Reducer<ITheReducerState, IEntityAction<any>>`
+### `theReducer.entity:(...reducers:IEntityReducerContainer<any, any>[]) => Reducer<ITheReducerState, IEntityAction<any>>`
 
-### `theReducer.singleton:(...reducers:ISingletonReducerContainer<any>[]) => Reducer<ISingletonTheReducerState, ISingletonAction<any>>`
+### `theReducer.singleton:(...reducers:ISingletonReducerContainer<any, any>[]) => Reducer<ISingletonTheReducerState, ISingletonAction<any>>`
 
 The `theReducer` functions combines separate `[Entity|Singleton]Reducer` objects into a single optimized reducer for the `theReducer[Entities|Singletons]` state slices.  It is meant to be used in your main Redux file:
 
@@ -276,9 +278,9 @@ const reducer = combineReducers({
 });
 ```
 
-### `mergeEntityReducers:(...reducers:IEntityReducerContainer<any>[]) => IEntityReducerContainer<any>`
+### `mergeEntityReducers:(...reducers:IEntityReducerContainer<any, any>[]) => IEntityReducerContainer<any, any>`
 
-### `mergeSingletonReducers:(...reducers:ISingletonReducerContainer<any>[]) => ISingletonReducerContainer<any>`
+### `mergeSingletonReducers:(...reducers:ISingletonReducerContainer<any, any>[]) => ISingletonReducerContainer<any, any>`
 
 For large applications, you may want to handle related entities and/or singletons within a single module to avoid polluting your main Redux file with every entity in the application:
 
@@ -311,9 +313,9 @@ const reducer = combineReducers({
 });
 ```
 
-### `getChildren:<C>(childDef:IEntityDefinition<C>, field:string) => ChildSelector<C>`
+### `getChildren:<T, C = {}>(childDef:IEntityDefinition<T, C>, field:string) => ChildSelector<T>`
 
-The `getChildren` function returns a `ChildSelector<C>` function where `C` is the type of the children entities.  This selector function can be merged into the parent's entity to provide access to children entities:
+The `getChildren` function returns a `ChildSelector<T>` function where `T` is the type of the children entities.  This selector function can be merged into the parent's entity to provide access to children entities:
 
 ```javascript
 const parent = {
@@ -334,7 +336,7 @@ The child selector can then be called from the mapStateToProps function to fetch
     ...
 ```
 
-### `getParent:<P, C>(parentDef:IEntityDefinition<P>, childDef:IEntityDefinition<C>, field:string) => ParentSelector<P, C>`
+### `getParent:<P, C, PC = {}, CC = {}>(parentDef:IEntityDefinition<P, PC>, childDef:IEntityDefinition<C, CC>, field:string) => ParentSelector<P, C>`
 
 The `getParent` function returns a `ParentSelector<P>` function where `P` is the type of the parent entity.  This selector function can be merged into the child's entity to provide access to the parent entity:
 
@@ -357,7 +359,7 @@ The parent selector can then be called from the mapStateToProps function to fetc
     ...
 ```
 
-### `getRelated:<R, B>(rDef:IEntityDefinition<R>, bDef:IEntityDefinition<B>, aField:string, bField:string) => RelatedSelector<R, B>`
+### `getRelated:<R, B, RC = {}, RB = {}>(rDef:IEntityDefinition<R, RC>, bDef:IEntityDefinition<B, BC>, aField:string, bField:string) => RelatedSelector<R, B>`
 
 The `getRelated` function returns a `RelatedSelector<R, B>` function where `B` is the type of the related entity, and `R` is the type of the relation entity (the mapping table).  This selector function can be merged into an entity to provide access to related entities:
 

@@ -45,6 +45,11 @@ var entityReducer = function (def) { return function (state, action) {
             _a[entity_types_1.EntityActionType.Delete] = function () { return atp_pointfree_1.remove(action.id)(state); },
             _a[entity_types_1.EntityActionType.DeleteMultiple] = function () { return atp_pointfree_1.remove(action.ids)(state); },
             _a[entity_types_1.EntityActionType.Clear] = function () { return ({}); },
+            _a[entity_types_1.EntityActionType.Custom] = function () { return def.customReducer
+                ? (function (a) {
+                    return (def.customReducer[a.customType] || (function () { return state; }))(state, a.data);
+                })(action)
+                : state; },
             _a.default = function () { return state; },
             _a))
         : state;
@@ -101,6 +106,7 @@ var createEntityActions = function (def) { return ({
     update: function (entity) { return ({ namespace: namespace, type: entity_types_1.EntityActionType.Update, entity: entity, entityType: def.entity, module: def.module }); },
     updateMultiple: function (entities) { return ({ namespace: namespace, type: entity_types_1.EntityActionType.UpdateMultiple, entities: entities, entityType: def.entity, module: def.module }); },
     clear: function () { return ({ namespace: namespace, type: entity_types_1.EntityActionType.Clear, entityType: def.entity, module: def.module }); },
+    custom: function (type, data) { return ({ namespace: namespace, type: entity_types_1.EntityActionType.Custom, entityType: def.entity, module: def.module, customType: type, data: data }); }
 }); };
 var getEntities = function (state, def) {
     return state.theReducerEntities[def.module] && state.theReducerEntities[def.module][def.entity]

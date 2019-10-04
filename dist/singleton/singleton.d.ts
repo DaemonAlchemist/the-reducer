@@ -1,6 +1,5 @@
 import { Reducer } from 'redux';
-import { IEntityDefinition } from '../entity';
-import { ISingletonAction, ISingletonReducerContainer, Singleton, ISingletonTheReducerState } from './singleton.types';
-export declare const theSingletonReducer: (...reducers: ISingletonReducerContainer<any>[]) => Reducer<ISingletonTheReducerState, ISingletonAction<any>>;
-export declare const mergeSingletonReducers: (...reducers: ISingletonReducerContainer<any>[]) => ISingletonReducerContainer<any>;
-export declare const singleton: <T>(def: IEntityDefinition<T>) => Singleton<T>;
+import { ISingletonAction, ISingletonDefinition, ISingletonReducerContainer, ISingletonTheReducerState, Singleton } from './singleton.types';
+export declare const theSingletonReducer: (...reducers: ISingletonReducerContainer<any, any>[]) => Reducer<ISingletonTheReducerState, ISingletonAction>;
+export declare const mergeSingletonReducers: (...reducers: ISingletonReducerContainer<any, any>[]) => ISingletonReducerContainer<any, any>;
+export declare const singleton: <T, C>(def: ISingletonDefinition<T, C>) => Singleton<T, C>;

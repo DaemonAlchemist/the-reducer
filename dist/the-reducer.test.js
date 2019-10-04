@@ -53,6 +53,12 @@ var complexObjDef = {
     module: "test",
     entity: "complexObj",
     default: { id: "", name: "", subObject: { foo: "", bar: "", stuff: [] }, otherStuff: [] },
+    customReducer: {
+        concatOtherStuff: function (state, data) {
+            var _a;
+            return (__assign({}, state, (_a = {}, _a[data.id] = __assign({}, state[data.id], { otherStuff: state[data.id].otherStuff.concat([data.value]) }), _a)));
+        },
+    }
 };
 var complex = index_1.entity(complexObjDef);
 ;
@@ -65,6 +71,9 @@ var singletonObj2Def = {
     module: "test2",
     entity: "singleton2",
     default: { name: "", stuff: [] },
+    customReducer: {
+        concatStuff: function (state, data) { return (__assign({}, state, { stuff: state.stuff.concat([data.value]) })); }
+    }
 };
 var single = index_1.singleton(singletonObjDef);
 var single2 = index_1.singleton(singletonObj2Def);
@@ -157,6 +166,21 @@ it("should replace arrays when updating", function () {
         complex.update({ id: "1", otherStuff: ["7", "8", "9"] }),
     ].reduce(reducer, initialState);
     expect(complex.get(state, "1").otherStuff).toEqual(["7", "8", "9"]);
+});
+it("should support custom reducers for entities", function () {
+    var state = [
+        complex.add({ id: "1", name: "test", subObject: { foo: "baz", bar: "biz", stuff: [1, 2, 3] }, otherStuff: ["4", "5", "6"] }),
+        complex.custom("concatOtherStuff", { id: "1", value: "7" }),
+    ].reduce(reducer, initialState);
+    expect(complex.get(state, "1").otherStuff).toEqual(["4", "5", "6", "7"]);
+});
+it("should support custom reducers for singletons", function () {
+    var state = [
+        single2.update({ name: "Test", stuff: ["1", "2", "3"] }),
+        single2.custom("concatStuff", { value: "4" }),
+    ].reduce(reducer, initialState);
+    expect(single2.get(state).name).toEqual("Test");
+    expect(single2.get(state).stuff).toEqual(["1", "2", "3", "4"]);
 });
 it("should support singleton (id-less) entities", function () {
     var state = [
