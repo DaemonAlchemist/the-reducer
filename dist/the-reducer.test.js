@@ -266,14 +266,39 @@ it("should be able to fetch multiple entities", function () {
     expect(arcs[0].name).toEqual("Test Arc");
     expect(arcs[1].name).toEqual("Test Arc 2");
 });
+it("should not memoize fetching multiple entities on changes", function () {
+    var state1 = [
+        arc.add({ id: "1", name: "Test Arc" }),
+        arc.add({ id: "2", name: "Test Arc 2" }),
+    ].reduce(reducer, initialState);
+    var arcs1 = arc.getMultiple(state1, function (a) { return a; });
+    expect(arcs1.length).toEqual(2);
+    expect(arcs1[0].name).toEqual("Test Arc");
+    expect(arcs1[1].name).toEqual("Test Arc 2");
+    var state2 = [
+        arc.add({ id: "3", name: "Test Arc 3" }),
+        arc.add({ id: "4", name: "Test Arc 4" }),
+    ].reduce(reducer, state1);
+    var arcs2 = arc.getMultiple(state2, function (a) { return a; });
+    expect(arcs2.length).toEqual(4);
+    expect(arcs2[0].name).toEqual("Test Arc");
+    expect(arcs2[1].name).toEqual("Test Arc 2");
+    expect(arcs2[2].name).toEqual("Test Arc 3");
+    expect(arcs2[3].name).toEqual("Test Arc 4");
+});
 it("should be able to fetch and filter multiple entities", function () {
     var state = [
         arc.add({ id: "1", name: "Test Arc" }),
         arc.add({ id: "2", name: "Test Arc 2" }),
     ].reduce(reducer, initialState);
-    var arcs = arc.getMultiple(state, function (a) { return a.id === "2"; });
-    expect(arcs.length).toEqual(1);
-    expect(arcs[0].name).toEqual("Test Arc 2");
+    var filter1 = function (a) { return a.id === "1"; };
+    var filter2 = function (a) { return a.id === "2"; };
+    var arcs1 = arc.getMultiple(state, filter1);
+    var arcs2 = arc.getMultiple(state, filter2);
+    expect(arcs1.length).toEqual(1);
+    expect(arcs1[0].name).toEqual("Test Arc");
+    expect(arcs2.length).toEqual(1);
+    expect(arcs2[0].name).toEqual("Test Arc 2");
 });
 it("can fetch children", function () {
     var state = [
@@ -283,10 +308,13 @@ it("can fetch children", function () {
         page.add({ id: "2", name: "Test Page 2", arcId: "1" }),
         page.add({ id: "3", name: "Test Page 3", arcId: "2" }),
     ].reduce(reducer, initialState);
-    var pages = arc.pages(state, "1");
-    expect(pages.length).toEqual(2);
-    expect(pages[0].name).toEqual("Test Page");
-    expect(pages[1].name).toEqual("Test Page 2");
+    var pages1 = arc.pages(state, "1");
+    var pages2 = arc.pages(state, "2");
+    expect(pages1.length).toEqual(2);
+    expect(pages1[0].name).toEqual("Test Page");
+    expect(pages1[1].name).toEqual("Test Page 2");
+    expect(pages2.length).toEqual(1);
+    expect(pages2[0].name).toEqual("Test Page 3");
 });
 it("can fetch parents", function () {
     var state = [

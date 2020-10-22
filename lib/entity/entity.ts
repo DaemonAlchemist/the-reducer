@@ -1,7 +1,8 @@
 import { prop, remove, switchOn } from 'atp-pointfree';
 import { Reducer } from 'redux';
+import { memoize } from 'ts-functional';
 import { merge } from "../util";
-import { ChildSelector, Entity, EntityAction, EntityActionType, Filter, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, RelatedSelector, IEntityCustomAction } from './entity.types';
+import { ChildSelector, Entity, EntityAction, EntityActionType, Filter, IEntityAction, IEntityActions, IEntityAddAction, IEntityAddMultipleAction, IEntityBase, IEntityContainer, IEntityCustomAction, IEntityDefinition, IEntityDeleteAction, IEntityDeleteMultipleAction, IEntityReducer, IEntityReducerContainer, IEntitySelectors, IEntityState, IEntityUpdateAction, IEntityUpdateMultipleAction, IModuleReducer, IModuleState, ITheReducerState, ParentSelector, PartialEntity, RelatedSelector } from './entity.types';
 
 const namespace = "theReducerEntityAction";
 
@@ -91,9 +92,30 @@ const createEntityActions = <T extends IEntityBase, C>(def:IEntityDefinition<T, 
     custom: (type:string, data:C) => ({namespace, type: EntityActionType.Custom, entityType: def.entity, module: def.module, customType: type, data})
 });
 
+const objIdMap=new WeakMap<object>();
+let objectCount = 0;
+
+export const objectId = (object:object):number => {
+    if (!objIdMap.has(object)) {
+        objIdMap.set(object,++objectCount);
+    }
+    return objIdMap.get(object);
+}
+
+const __getEntities = memoize(
+    <T extends IEntityBase>(state:IEntityState<T>, defaultVal:T, entity:string, objId:number) =>
+        Object.keys(state).map((key:string) => Object.assign({}, defaultVal, state[key])),
+    {keyGen: (args:any[]) => {
+        const entity = args[2];
+        const objId = args[3];
+        const key = `${entity}:${objId}`;
+        return key;
+    }}
+);
+
 const getEntities = <T extends IEntityBase, C>(state:IEntityContainer<T>, def:IEntityDefinition<T, C>):T[] =>
     state.theReducerEntities[def.module] && state.theReducerEntities[def.module][def.entity]
-        ? Object.keys(state.theReducerEntities[def.module][def.entity]).map((key:string) => Object.assign({}, def.default, state.theReducerEntities[def.module][def.entity][key]))
+        ? __getEntities(state.theReducerEntities[def.module][def.entity], def.default, def.entity, objectId(state.theReducerEntities[def.module][def.entity]))
         : [];
 
 const getEntity = <T extends IEntityBase, C>(state:IEntityContainer<T>, def:IEntityDefinition<T, C>, id:string):T =>
@@ -109,22 +131,26 @@ const selectAll = <T>() => (obj:T):boolean => true;
 const createEntitySelectors = <T extends IEntityBase, C>(def:IEntityDefinition<T, C>):IEntitySelectors<T> => ({
     exists:(state:IEntityContainer<T>, id:string):boolean => entityExists(state, def, id),
     get:(state:IEntityContainer<T>, id:string):T => getEntity<T, C>(state, def, id),
-    getMultiple: (state:IEntityContainer<T>, f:Filter<T> = selectAll<T>()):T[] =>
-        getEntities(state, def).filter(f),
+    getMultiple: memoize(
+        (state:IEntityContainer<T>, f:Filter<T> = selectAll<T>()):T[] => getEntities(state, def).filter(f),
+        {keyGen: (args:any[]) => args.map(objectId).join(":")}
+    ),
 });
 
+const childFilter = memoize(<T>(parentId:string, field:string) => (child:T) => ((<any>child)[field] as string) === parentId, {});
 export const getChildren = <T extends IEntityBase, C = {}>(childDef:IEntityDefinition<T, C>, field:string):ChildSelector<T> =>
     (state:IEntityContainer<T>, parentId:string):T[] =>
-        entity<T, C>(childDef).getMultiple(state, (child:T) => ((<any>child)[field] as string) === parentId);
+        entity<T, C>(childDef).getMultiple(state, childFilter(parentId, field));
 
 export const getParent = <P extends IEntityBase, C extends IEntityBase, PC = {}, CC = {}>(parentDef:IEntityDefinition<P, PC>, childDef:IEntityDefinition<C, CC>, field:string):ParentSelector<P, C> =>
     (state:IEntityContainer<P> & IEntityContainer<C>, childId:string):P =>
         entity<P, PC>(parentDef).get(state, prop(field)(entity<C, CC>(childDef).get(state, childId)));
 
+const relatedFilter = memoize(<R>(aId:string, aField:string) => (r:R) => ((<any>r)[aField] as string) === aId, {});
 export const getRelated = <R extends IEntityBase, B extends IEntityBase, RC = {}, BC = {}>(rDef:IEntityDefinition<R, RC>, bDef:IEntityDefinition<B, BC>, aField:string, bField:string):RelatedSelector<R, B> =>
     (state:IEntityContainer<R> & IEntityContainer<B>, aId:string) => {
         const bIds:string[] = entity<R, RC>(rDef)
-            .getMultiple(state, (r:R) => ((<any>r)[aField] as string) === aId)
+            .getMultiple(state, relatedFilter(aId, aField))
             .map(prop(bField));
         return entity<B, BC>(bDef).getMultiple(state, (b:B):boolean => bIds.includes(b.id));
     };

@@ -12,6 +12,7 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var atp_pointfree_1 = require("atp-pointfree");
+var ts_functional_1 = require("ts-functional");
 var util_1 = require("../util");
 var entity_types_1 = require("./entity.types");
 var namespace = "theReducerEntityAction";
@@ -108,9 +109,25 @@ var createEntityActions = function (def) { return ({
     clear: function () { return ({ namespace: namespace, type: entity_types_1.EntityActionType.Clear, entityType: def.entity, module: def.module }); },
     custom: function (type, data) { return ({ namespace: namespace, type: entity_types_1.EntityActionType.Custom, entityType: def.entity, module: def.module, customType: type, data: data }); }
 }); };
+var objIdMap = new WeakMap();
+var objectCount = 0;
+exports.objectId = function (object) {
+    if (!objIdMap.has(object)) {
+        objIdMap.set(object, ++objectCount);
+    }
+    return objIdMap.get(object);
+};
+var __getEntities = ts_functional_1.memoize(function (state, defaultVal, entity, objId) {
+    return Object.keys(state).map(function (key) { return Object.assign({}, defaultVal, state[key]); });
+}, { keyGen: function (args) {
+        var entity = args[2];
+        var objId = args[3];
+        var key = entity + ":" + objId;
+        return key;
+    } });
 var getEntities = function (state, def) {
     return state.theReducerEntities[def.module] && state.theReducerEntities[def.module][def.entity]
-        ? Object.keys(state.theReducerEntities[def.module][def.entity]).map(function (key) { return Object.assign({}, def.default, state.theReducerEntities[def.module][def.entity][key]); })
+        ? __getEntities(state.theReducerEntities[def.module][def.entity], def.default, def.entity, exports.objectId(state.theReducerEntities[def.module][def.entity]))
         : [];
 };
 var getEntity = function (state, def, id) {
@@ -126,14 +143,15 @@ var selectAll = function () { return function (obj) { return true; }; };
 var createEntitySelectors = function (def) { return ({
     exists: function (state, id) { return entityExists(state, def, id); },
     get: function (state, id) { return getEntity(state, def, id); },
-    getMultiple: function (state, f) {
+    getMultiple: ts_functional_1.memoize(function (state, f) {
         if (f === void 0) { f = selectAll(); }
         return getEntities(state, def).filter(f);
-    },
+    }, { keyGen: function (args) { return args.map(exports.objectId).join(":"); } }),
 }); };
+var childFilter = ts_functional_1.memoize(function (parentId, field) { return function (child) { return child[field] === parentId; }; }, {});
 exports.getChildren = function (childDef, field) {
     return function (state, parentId) {
-        return exports.entity(childDef).getMultiple(state, function (child) { return child[field] === parentId; });
+        return exports.entity(childDef).getMultiple(state, childFilter(parentId, field));
     };
 };
 exports.getParent = function (parentDef, childDef, field) {
@@ -141,10 +159,11 @@ exports.getParent = function (parentDef, childDef, field) {
         return exports.entity(parentDef).get(state, atp_pointfree_1.prop(field)(exports.entity(childDef).get(state, childId)));
     };
 };
+var relatedFilter = ts_functional_1.memoize(function (aId, aField) { return function (r) { return r[aField] === aId; }; }, {});
 exports.getRelated = function (rDef, bDef, aField, bField) {
     return function (state, aId) {
         var bIds = exports.entity(rDef)
-            .getMultiple(state, function (r) { return r[aField] === aId; })
+            .getMultiple(state, relatedFilter(aId, aField))
             .map(atp_pointfree_1.prop(bField));
         return exports.entity(bDef).getMultiple(state, function (b) { return bIds.includes(b.id); });
     };

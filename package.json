@@ -43,6 +43,8 @@
   },
   "dependencies": {
     "atp-pointfree": "^0.11.5",
-    "redux": "^4.0.1"
+    "redux": "^4.0.1",
+    "reselect": "^4.0.0",
+    "ts-functional": "^1.6.0"
   }
 }
